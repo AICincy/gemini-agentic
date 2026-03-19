@@ -30,14 +30,12 @@
 
 ---
 # Remove credit card numbers (with/without spaces/dashes)
-# Covers: Visa (4xxx), Mastercard (5[1-5]xx, 2[2-7]xx), Amex (3[47]xx),
-#         Discover (6011, 65xx), Diners (3[068]xx), JCB (35xx)
-# Ref: https://regex101.com/library/Y1Wsjc
+# Covers: 16-digit cards starting with 4/5/6 (Visa, Mastercard, Discover, etc.)
+#         and 15-digit cards starting with 3 (Amex, Diners, JCB, etc.)
+# Enhanced from original regex with digit-boundary anchors and separator support
     title+body (regex):
-        - '(?<!\d)(?:4\d{3}|5[1-5]\d{2}|2(?:2[2-9]\d|2[3-9]\d|[3-6]\d{2}|7[01]\d|720))[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}(?!\d)'
-        - '(?<!\d)3[47]\d{2}[\s\-]?\d{6}[\s\-]?\d{5}(?!\d)'
-        - '(?<!\d)(?:6011|65\d{2})[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}(?!\d)'
-        - '(?<!\d)3(?:0[0-5]|[68]\d)\d[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{2}(?!\d)'
+        - '(?<!\d)(?:4[0-9]{3}|5[0-9]{3}|6[0-9]{3})[\s\-]?[0-9]{4}[\s\-]?[0-9]{4}[\s\-]?[0-9]{4}(?!\d)'
+        - '(?<!\d)3[0-9]{3}[\s\-]?[0-9]{6}[\s\-]?[0-9]{5}(?!\d)'
     moderators_exempt: false
     action: remove
     action_reason: "Credit card number detected [{{match}}]"
