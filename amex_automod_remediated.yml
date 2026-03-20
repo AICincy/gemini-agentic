@@ -30,14 +30,23 @@
 
 ---
 # Remove credit card numbers (with/without spaces/dashes)
-# Covers: Visa (4xxx), Mastercard (5[1-5]xx, 2[2-7]xx), Amex (3[47]xx),
-#         Discover (6011, 65xx), Diners (3[068]xx), JCB (35xx)
+# Covers: Visa (4xxx), Mastercard (51xx-55xx, 2221-2720), Amex (34xx, 37xx),
+#         Discover (6011, 644-649, 65xx), Diners (300-305, 36xx, 38xx),
+#         JCB modern (35xx 16-digit) and JCB classic (2131, 1800 15-digit)
 # Ref: https://regex101.com/library/Y1Wsjc
     title+body (regex):
-        - '(?<!\d)(?:4\d{3}|5[1-5]\d{2}|2(?:2[2-9]\d|2[3-9]\d|[3-6]\d{2}|7[01]\d|720))[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}(?!\d)'
+        # Visa (4xxx) + Mastercard (51xx-55xx, 2221-2720) — 16-digit, 4-4-4-4
+        - '(?<!\d)(?:4\d{3}|5[1-5]\d{2}|2(?:22[1-9]|2[3-9]\d|[3-6]\d{2}|7[01]\d|720))[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}(?!\d)'
+        # Amex (34xx, 37xx) — 15-digit, 4-6-5
         - '(?<!\d)3[47]\d{2}[\s\-]?\d{6}[\s\-]?\d{5}(?!\d)'
-        - '(?<!\d)(?:6011|65\d{2})[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}(?!\d)'
+        # Discover (6011, 644-649, 65xx) — 16-digit, 4-4-4-4
+        - '(?<!\d)(?:6011|64[4-9]\d|65\d{2})[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}(?!\d)'
+        # Diners Club (300-305, 36xx, 38xx) — 14-digit, 4-4-4-2
         - '(?<!\d)3(?:0[0-5]|[68]\d)\d[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{2}(?!\d)'
+        # JCB modern (35xx) — 16-digit, 4-4-4-4
+        - '(?<!\d)35\d{2}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}(?!\d)'
+        # JCB classic (2131, 1800) — 15-digit, 4-6-5
+        - '(?<!\d)(?:2131|1800)[\s\-]?\d{6}[\s\-]?\d{5}(?!\d)'
     moderators_exempt: false
     action: remove
     action_reason: "Credit card number detected [{{match}}]"
@@ -54,7 +63,8 @@
 ---
 # Remove Social Security Numbers (XXX-XX-XXXX or XXXXXXXXX)
 # Handles dashes, spaces, or no separator
-    title+body (regex): '(?<!\d)\d{3}[\s\-]?\d{2}[\s\-]?\d{4}(?!\d)'
+# Excludes invalid SSA ranges: 000/666/9xx area, 00 group, 0000 serial
+    title+body (regex): '(?<!\d)(?!000|666|9\d{2})\d{3}[\s\-]?(?!00)\d{2}[\s\-]?(?!0000)\d{4}(?!\d)'
     moderators_exempt: false
     action: remove
     action_reason: "Possible SSN detected [{{match}}]"
@@ -69,14 +79,35 @@
 # Remove US phone numbers
 # Matches: (XXX) XXX-XXXX, XXX-XXX-XXXX, XXX.XXX.XXXX, +1XXXXXXXXXX
     title+body (regex): '(?<!\d)(?:\+?1[\s\-\.]?)?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4}(?!\d)'
+    # Exclude common false positives: fake/sequential numbers, 555-xxxx, crisis hotlines, digits in URLs
+    ~body (regex): ['000\.000\.0000', '111\.111\.1111', '222\.222\.2222', '999\.999\.9999', '\d{3}\W+555\W\d{4}', '\d*1\W?2\W?3\W?4\W?5\W?6\W?7\W?8\W?9\d*', '800\W+273\.8255', '800\W+799\.7233', '(https?://|www\.)\S*([\(\)\._-]{0,3}\d){5}\w*']
     moderators_exempt: false
     action: filter
     action_reason: "Possible phone number detected [{{match}}]"
+    modmail_subject: "PII Alert: Phone Number"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} was filtered because it contained a possible phone number.
+
+        Please verify and re-approve if it is not personal information.
 ---
 # Remove email addresses with word boundaries
-    title+body (regex): '\b[\w\.\+\-]+@[\w\-]+\.[\w\.\-]+\b'
+# Excludes common system/service prefixes that are not personal information
+    title+body (regex): '(?<![\.\w\-])(?!(?:abuse|help|info|no-?reply|phishing|service|spoof|support)\@)[\w\.\+\-]+@[\w\-]+\.[\w\.\-]+\b'
+    moderators_exempt: false
     action: remove
     action_reason: "Email address detected [{{match}}]"
+    modmail_subject: "Doxxing Alert: Email Address"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} was removed because it contained a possible email address.
+
+        **Immediate actions required:**
+        1. Verify the removal was correct
+        2. If the user is doxxing, [ban them](/r/{{subreddit}}/about/banned)
+        3. [Report to Reddit admins](http://www.reddit.com/message/compose?to=%2Fr%2Freddit.com&subject=Doxxing%20Report:%20%2Fu%2F{{author}})
 ---
 
 # ============================================================================
@@ -223,6 +254,9 @@ action_reason: "Inactive aged account (>1yr, <1 combined karma)"
 ---
 # Acronym helper: only responds when user explicitly asks about an acronym
 # Removed overly broad "what is [word]" regex that triggered on all questions
+# NOTE: The URL below uses tinyurl.com, which is blocked by the URL shortener
+#   rule. AutoMod does not act on its own comments, so this is functional, but
+#   consider replacing with the full destination URL for transparency.
 type: comment
 body (includes-word): ["acronym", "acronyms"]
 comment: "It looks like you may be asking about an acronym. For a comprehensive glossary, check out [this guide](https://tinyurl.com/pointsprimer) (credit: Dapper_Reputation_16). This is an automated response. If triggered in error, please downvote."
