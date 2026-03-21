@@ -232,9 +232,9 @@
         # SSN
         - '(?<!\d)(?!000|666|9\d{2})\d{3}[^\da-zA-Z]{0,4}(?!00)\d{2}[^\da-zA-Z]{0,4}(?!0000)\d{4}(?!\d)'
         # Email (with spaces around @)
-        - '(?<![\.\w\-])[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
-        # Obfuscated email (with brackets around "at"/"dot")
-        - '(?i)[\w\.\+\-]+\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>]\s*[\w\-]+\s*[\[\(\{<]\s*(?:dot|\.)\s*[\]\)\}>]\s*[\w\.\-]+'
+        - '(?<![\.\w\-])(?!(?:abuse|help|info|no[\s\.\-_]?reply|support)\b)[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
+        # Obfuscated email
+        - '(?i)(?!(?:abuse|help|info|no[\s\.\-_]?reply|support)\b)[\w\.\+\-]+\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>]\s*[\w\-]+\s*[\[\(\{<]\s*(?:dot|\.)\s*[\]\)\}>]\s*[\w\.\-]+'
         # Obfuscated email (bare "at"/"dot" without brackets)
         - '(?i)(?<![\.\w\-])[\w\.\+\-]+\s+(?:at|@)\s+[\w\-]+(?:\s+(?:dot|\.)\s+[\w\.\-]+)+\b'
     ignore_blockquotes: true
