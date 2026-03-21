@@ -2,8 +2,8 @@
 
 # ============================================================================
 # r/Amex AutoModerator Configuration
-# Version: 4.0 (Prison-level hardening + Rule alignment)
-# Last updated: 2026-03-20
+# Version: 4.1 (Prison-level hardening + Rule alignment + Unicode evasion defense)
+# Last updated: 2026-03-21
 #
 # r/amex Rules enforced:
 #   Rule 1: Referral Protocol (permanent ban for violations)
@@ -247,6 +247,46 @@
 
         This may indicate a user edited in sensitive data after initial posting. Please review immediately.
 ---
+# Detect zero-width Unicode characters used to bypass pattern matching
+# Zero-width spaces (U+200B), zero-width joiners (U+200D), zero-width
+# non-joiners (U+200C), word joiners (U+2060), and other invisible chars
+# inserted between digits/letters to break regex matching.
+# Example: "4​1​2​3" (digits separated by zero-width spaces) evades \d{4}
+    priority: 1
+    title+body (regex):
+        - '[\x{200B}\x{200C}\x{200D}\x{200E}\x{200F}\x{2060}\x{FEFF}]'
+    moderators_exempt: false
+    action: filter
+    action_reason: "Zero-width Unicode character detected — possible pattern evasion [{{match}}]"
+    modmail_subject: "PII Alert: Zero-Width Character Evasion"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} contains invisible zero-width Unicode characters that are commonly used to bypass PII detection patterns.
+
+        This is a strong indicator of intentional evasion. Please review the content carefully for hidden PII.
+---
+# Detect fullwidth/Unicode digit substitution used to bypass \d matching
+# Fullwidth digits (０-９, U+FF10-FF19), superscript/subscript digits,
+# and circled digits can represent numbers while evading standard \d regex.
+# Example: "４１２３ ４５６７ ８９０１ ２３４５" evades standard CC detection
+    priority: 1
+    title+body (regex):
+        - '[\x{FF10}-\x{FF19}]{3,}'
+        - '[\x{2070}\x{00B9}\x{00B2}\x{00B3}\x{2074}-\x{2079}]{3,}'
+        - '[\x{2080}-\x{2089}]{3,}'
+        - '[\x{2460}-\x{2473}]{3,}'
+    moderators_exempt: false
+    action: filter
+    action_reason: "Unicode digit substitution detected [{{match}}]"
+    modmail_subject: "PII Alert: Unicode Digit Evasion"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} contains non-standard Unicode digit characters (fullwidth, superscript, subscript, or circled).
+
+        This may be an attempt to bypass PII detection. Please inspect the content for hidden numbers.
+---
 # Secondary defense: catch PII hidden inside blockquotes
 # Primary PII rules use ignore_blockquotes:true for fewer false positives,
 # but this creates a bypass — PII in > quotes is invisible to them.
@@ -378,6 +418,7 @@
     action_reason: "Rule 2: Possible bare domain name [{{match}}]"
 ---
 # Detect phishing — typosquats, homoglyphs, suspicious TLDs, deceptive markdown
+    priority: 1
     title+body+url (regex):
         - '(?i)(?:arnex|arnexx|ameix)\w*\.(?:com|net|org|co|io)'
         - '(?i)(?:arnerican|amerlcan|americn|amercian)[\-_\.]?express'
@@ -399,6 +440,7 @@
         **This is a permanent ban offense (Rule 2).** Investigate immediately.
 ---
 # Detect discussion/promotion of illegal activities
+    priority: 1
     title+body (regex):
         - '(?i)\b(?:money\s+launder|launder(?:ing)?\s+money)\b'
         - '(?i)\b(?:identity\s+(?:theft|fraud|steal)|steal(?:ing)?\s+identity)\b'
@@ -420,6 +462,7 @@
         **Rule 2 states this results in a permanent ban.** Please review and take action.
 ---
 # Detect Amex employee impersonation
+    priority: 1
     title+body (regex):
         - "(?i)\\b(?:i\\s+work|i\\s+am|i'm)\\s+(?:at|for|with)\\s+(?:amex|american\\s*express)\\b"
         - '(?i)\bamex\s+(?:employee|representative|agent|insider)\b'
@@ -435,6 +478,7 @@
         The above {{kind}} by /u/{{author}} may claim insider Amex access. Please verify — if this is a verified Amex representative, re-approve. Otherwise, potential Rule 2 violation.
 ---
 # Detect financial/crypto scam patterns
+    priority: 1
     title+body (regex):
         - '(?i)\b(?:wire|zelle|venmo|cashapp|cash\s*app|paypal)\s+(?:me|transfer|send)\b'
         - '(?i)\bgift\s*card\s*(?:payment|pay\s+with|as\s+payment)\b'
@@ -505,6 +549,7 @@ action_reason: "Inactive aged account (>1yr, <1 combined karma)"
 # ============================================================================
 
 ---
+    priority: 1
     title+body (regex):
         - '(?i)\b(?:retard(?:ed)?|f[a@]g(?:got)?|tr[a@]nn(?:y|ie)|d[yi]ke|k[i1]ke|sp[i1]c|ch[i1]nk|w[e3]tb[a@]ck|c[o0][o0]n)\b'
     moderators_exempt: false
@@ -516,6 +561,7 @@ action_reason: "Inactive aged account (>1yr, <1 combined karma)"
 
         The above {{kind}} by /u/{{author}} was removed for a slur. **Rule 5 requires respectful conduct.** Consider a ban for repeat offenders.
 ---
+    priority: 1
     title+body (regex):
         - '(?i)\byou(?:r|\s+are)?\s+(?:a\s+)?(?:idiot|moron|stupid|dumb|loser|pathetic|worthless|trash|garbage|piece\s+of\s+shit)\b'
         - '(?i)\bkill\s+your\s*self\b|\bkys\b'
@@ -528,6 +574,7 @@ action_reason: "Inactive aged account (>1yr, <1 combined karma)"
     action_reason: "Rule 5: Personal attack/insult [{{match}}]"
     comment: "Your comment was filtered for review because it may violate Rule 5 (User Decorum). Please maintain respectful conduct. If another user is bothering you, use the **block** and **report** features rather than engaging."
 ---
+    priority: 1
     title+body (regex):
         - "(?i)\\bI\\s*(?:will|am\\s+going\\s+to|gonna)\\s+(?:find|hunt|track|dox|hack|hurt|kill|sue)\\s+you\\b"
         - '(?i)\bwatch\s+your\s+back\b'
@@ -618,6 +665,7 @@ action_reason: "Rule 4: Possible moderator complaint [{{match}}]"
 ---
     reports: 3
     action: remove
+    modmail_subject: "Auto-removed: 3+ Reports"
     modmail: |
         {{permalink}}
 
