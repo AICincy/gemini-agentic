@@ -1,11 +1,21 @@
 ---
 
 # ============================================================================
-# r/Amex AutoModerator Configuration (Remediated)
-# Version: 2.0
-# Last updated: 2026-03-19
-# Sections: Shadowbans, PII/Doxxing, Spam/Scam, Account Quality,
-#           Community Helpers, Messaging, Report Handling
+# r/Amex AutoModerator Configuration
+# Version: 4.1 (Prison-level hardening + Rule alignment + Unicode evasion defense)
+# Last updated: 2026-03-21
+#
+# r/amex Rules enforced:
+#   Rule 1: Referral Protocol (permanent ban for violations)
+#   Rule 2: Illegal Activity Prohibition (all non-Amex links banned)
+#   Rule 3: Submission Quality (research required, use Monthly FAQ)
+#   Rule 4: Moderator Interaction (mod decisions final)
+#   Rule 5: User Decorum (respectful conduct required)
+#
+# Sections: Shadowbans, PII/Doxxing, Rule 1 (Referrals), Rule 2 (Illegal/Links),
+#           Account Quality, Rule 5 (Decorum), Rule 3 (Quality), Rule 4 (Mods),
+#           Report Handling, Community Helpers
+#
 # Source: https://support.reddithelp.com/hc/en-us/articles/15484574206484
 # CQS ref: https://support.reddithelp.com/hc/en-us/articles/19023371170196
 # Full docs: https://www.reddit.com/wiki/automoderator/full-documentation
@@ -29,24 +39,30 @@
 # ============================================================================
 
 ---
-# Remove credit card numbers (with/without spaces/dashes)
+# Remove credit card numbers (with/without ANY non-alphanumeric separators)
 # Covers: Visa (4xxx), Mastercard (51xx-55xx, 2221-2720), Amex (34xx, 37xx),
 #         Discover (6011, 644-649, 65xx), Diners (300-305, 36xx, 38xx),
 #         JCB modern (35xx 16-digit) and JCB classic (2131, 1800 15-digit)
+# Separator [^\da-zA-Z]{0,6} matches ANY non-alphanumeric chars (spaces, dots,
+# dashes, underscores, pipes, markdown bold/italic, backticks, brackets, etc.)
+# This prevents bypass via dot/underscore/pipe/markdown formatting obfuscation.
+# BIN prefix (e.g. 4\d{3}) requires contiguous digits, limiting false positives.
 # Ref: https://regex101.com/library/Y1Wsjc
+    priority: 1
     title+body (regex):
         # Visa (4xxx) + Mastercard (51xx-55xx, 2221-2720) — 16-digit, 4-4-4-4
-        - '(?<!\d)(?:4\d{3}|5[1-5]\d{2}|2(?:22[1-9]|2[3-9]\d|[3-6]\d{2}|7[01]\d|720))[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}(?!\d)'
+        - '(?<!\d)(?:4\d{3}|5[1-5]\d{2}|2(?:22[1-9]|2[3-9]\d|[3-6]\d{2}|7[01]\d|720))[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}(?!\d)'
         # Amex (34xx, 37xx) — 15-digit, 4-6-5
-        - '(?<!\d)3[47]\d{2}[\s\-]?\d{6}[\s\-]?\d{5}(?!\d)'
+        - '(?<!\d)3[47]\d{2}[^\da-zA-Z]{0,6}\d{6}[^\da-zA-Z]{0,6}\d{5}(?!\d)'
         # Discover (6011, 644-649, 65xx) — 16-digit, 4-4-4-4
-        - '(?<!\d)(?:6011|64[4-9]\d|65\d{2})[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}(?!\d)'
+        - '(?<!\d)(?:6011|64[4-9]\d|65\d{2})[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}(?!\d)'
         # Diners Club (300-305, 36xx, 38xx) — 14-digit, 4-4-4-2
-        - '(?<!\d)3(?:0[0-5]|[68]\d)\d[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{2}(?!\d)'
+        - '(?<!\d)3(?:0[0-5]|[68]\d)\d[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{2}(?!\d)'
         # JCB modern (35xx) — 16-digit, 4-4-4-4
-        - '(?<!\d)35\d{2}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}(?!\d)'
+        - '(?<!\d)35\d{2}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}(?!\d)'
         # JCB classic (2131, 1800) — 15-digit, 4-6-5
-        - '(?<!\d)(?:2131|1800)[\s\-]?\d{6}[\s\-]?\d{5}(?!\d)'
+        - '(?<!\d)(?:2131|1800)[^\da-zA-Z]{0,6}\d{6}[^\da-zA-Z]{0,6}\d{5}(?!\d)'
+    ignore_blockquotes: true
     moderators_exempt: false
     action: remove
     action_reason: "Credit card number detected [{{match}}]"
@@ -61,10 +77,50 @@
         2. If the user is doxxing, [ban them](/r/{{subreddit}}/about/banned)
         3. [Report to Reddit admins](http://www.reddit.com/message/compose?to=%2Fr%2Freddit.com&subject=Doxxing%20Report:%20%2Fu%2F{{author}})
 ---
+# CC per-digit separation defense: catches "4 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5"
+# Primary grouped patterns require contiguous digits within each group, so
+# per-digit obfuscation bypasses them. This catches 13-19 digits where each
+# digit may be separated by a single common separator character.
+# Limited to card-valid first digits [1-6] (includes JCB 1xxx, MC 2xxx, Visa 4xxx, etc.)
+    priority: 1
+    title+body (regex): '(?<!\d)[1-6][\s\.\-_/]?\d(?:[\s\.\-_/]?\d){11,17}(?!\d)'
+    # Exclude contiguous runs (already caught by secondary rule) — only want truly separated
+    ~body (regex): '\d{13,19}'
+    ignore_blockquotes: true
+    moderators_exempt: false
+    action: filter
+    action_reason: "Per-digit separated card number pattern [{{match}}]"
+    modmail_subject: "PII Alert: Separated Card Digits"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} contains digits separated individually that may be an obfuscated credit card number (e.g., "4-1-2-3-4-5-6-7-8-9-0-1-2-3-4-5").
+
+        This pattern is commonly used to bypass grouped digit detection. Please verify.
+---
+# CC contiguous digit defense: catches raw digit dumps (no separators at all)
+# Matches 13-19 contiguous digits (valid range for all major card networks)
+    priority: 2
+    title+body (regex): '(?<!\d)\d{13,19}(?!\d)'
+    # Exclude contexts where long digit strings are expected
+    ~body (regex): ['(?i)(?:tracking|order|confirmation|reference|invoice|receipt|account|transaction|auth(?:orization)?)\s*[#:_\-]?\s*\d{13,19}', '(?i)(?:sku|upc|ean|isbn|asin|imei|meid|iccid)\s*[#:_\-]?\s*\d{13,19}']
+    ignore_blockquotes: true
+    moderators_exempt: false
+    action: filter
+    action_reason: "Contiguous digit run — possible unformatted card number [{{match}}]"
+    modmail_subject: "PII Alert: Possible Card Number"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} contains a 13-19 digit sequence that may be an unformatted credit card number. Please verify.
+---
 # Remove Social Security Numbers (XXX-XX-XXXX or XXXXXXXXX)
-# Handles dashes, spaces, or no separator
+# Separator [^\da-zA-Z]{0,4} catches any non-alphanumeric separator (dashes,
+# dots, pipes, underscores, markdown, etc.) to prevent trivial bypass.
 # Excludes invalid SSA ranges: 000/666/9xx area, 00 group, 0000 serial
-    title+body (regex): '(?<!\d)(?!000|666|9\d{2})\d{3}[\s\-]?(?!00)\d{2}[\s\-]?(?!0000)\d{4}(?!\d)'
+    priority: 1
+    title+body (regex): '(?<!\d)(?!000|666|9\d{2})\d{3}[^\da-zA-Z]{0,4}(?!00)\d{2}[^\da-zA-Z]{0,4}(?!0000)\d{4}(?!\d)'
+    ignore_blockquotes: true
     moderators_exempt: false
     action: remove
     action_reason: "Possible SSN detected [{{match}}]"
@@ -77,10 +133,14 @@
         If doxxing is confirmed, [ban them](/r/{{subreddit}}/about/banned) and [report to admins](http://www.reddit.com/message/compose?to=%2Fr%2Freddit.com&subject=Doxxing%20Report:%20%2Fu%2F{{author}}).
 ---
 # Remove US phone numbers
-# Matches: (XXX) XXX-XXXX, XXX-XXX-XXXX, XXX.XXX.XXXX, +1XXXXXXXXXX
-    title+body (regex): '(?<!\d)(?:\+?1[\s\-\.]?)?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4}(?!\d)'
-    # Exclude common false positives: fake/sequential numbers, 555-xxxx, crisis hotlines, digits in URLs
-    ~body (regex): ['000\.000\.0000', '111\.111\.1111', '222\.222\.2222', '999\.999\.9999', '\d{3}\W+555\W\d{4}', '\d*1\W?2\W?3\W?4\W?5\W?6\W?7\W?8\W?9\d*', '800\W+273\.8255', '800\W+799\.7233', '(https?://|www\.)\S*([\(\)\._-]{0,3}\d){5}\w*']
+# Separator [^\da-zA-Z]{0,4} catches any non-alphanumeric separator to prevent
+# bypass via pipes, semicolons, markdown, multi-char gaps (e.g. "123 - 456 - 7890")
+    priority: 1
+    title+body (regex): '(?<!\d)(?:\+?1[^\da-zA-Z]{0,4})?\(?\d{3}\)?[^\da-zA-Z]{0,4}\d{3}[^\da-zA-Z]{0,4}\d{4}(?!\d)'
+    # Exclude false positives: fake numbers, 555-xxxx, crisis hotlines, digits in URLs
+    # Exclusion separators use \W+ to match any separator style
+    ~body (regex): ['000\W+000\W+0000', '111\W+111\W+1111', '222\W+222\W+2222', '999\W+999\W+9999', '\d{3}\W+555\W+\d{4}', '\d*1\W?2\W?3\W?4\W?5\W?6\W?7\W?8\W?9\d*', '800\W+273\W+8255', '800\W+799\W+7233', '988', '(https?://|www\.)\S*([\(\)\._\-]{0,3}\d){5}\w*']
+    ignore_blockquotes: true
     moderators_exempt: false
     action: filter
     action_reason: "Possible phone number detected [{{match}}]"
@@ -92,9 +152,11 @@
 
         Please verify and re-approve if it is not personal information.
 ---
-# Remove email addresses with word boundaries
+# Remove email addresses — also catches spaces around @ sign to prevent bypass
 # Excludes common system/service prefixes that are not personal information
-    title+body (regex): '(?<![\.\w\-])(?!(?:abuse|help|info|no-?reply|phishing|service|spoof|support)\@)[\w\.\+\-]+@[\w\-]+\.[\w\.\-]+\b'
+    priority: 1
+    title+body (regex): '(?<![\.\w\-])(?!(?:abuse|help|info|no-?reply|phishing|service|spoof|support)\s*@)[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
+    ignore_blockquotes: true
     moderators_exempt: false
     action: remove
     action_reason: "Email address detected [{{match}}]"
@@ -109,87 +171,352 @@
         2. If the user is doxxing, [ban them](/r/{{subreddit}}/about/banned)
         3. [Report to Reddit admins](http://www.reddit.com/message/compose?to=%2Fr%2Freddit.com&subject=Doxxing%20Report:%20%2Fu%2F{{author}})
 ---
-
-# ============================================================================
-# SECTION 3: SPAM, SCAM, AND PHISHING PREVENTION
-# ============================================================================
-
----
-# Remove referral links (Amex and common credit card referral domains)
-    body+title (includes, regex):
-        - 'refer\.amex'
-        - 'americanexpress\.com/refer'
-        - 'mgmresorts\.com/refer'
-        - 'refer.*?credit.?card'
+# Catch obfuscated email addresses that evade the @ check entirely
+# Matches: user [at] domain [dot] com, user (at) domain (dot) com,
+#          user {at} domain {dot} com, user <at> domain <dot> com
+# Requires brackets/parens/braces around "at"/"dot" to limit false positives
+    priority: 1
+    title+body (regex): '(?i)[\w\.\+\-]+\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>]\s*[\w\-]+\s*[\[\(\{<]\s*(?:dot|\.)\s*[\]\)\}>]\s*[\w\.\-]+'
+    ignore_blockquotes: true
+    moderators_exempt: false
     action: filter
-    action_reason: "Referral link detected [{{match}}]"
+    action_reason: "Obfuscated email detected [{{match}}]"
+    modmail_subject: "PII Alert: Obfuscated Email"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} contains an obfuscated email pattern (e.g., "user [at] domain [dot] com").
+
+        Please verify and re-approve if it is not personal information.
 ---
-# Block URL shorteners (common phishing/spam vector)
-    title+body+url (includes):
-        - "bit.ly"
-        - "tinyurl.com"
-        - "t.co/"
-        - "goo.gl"
-        - "ow.ly"
-        - "is.gd"
-        - "buff.ly"
-        - "adf.ly"
-        - "shorte.st"
-        - "cutt.ly"
-        - "rb.gy"
+# Catch obfuscated email — bare "AT"/"DOT" keywords (no brackets)
+# Stricter context: requires ALL CAPS "AT" and "DOT" or mixed with @ . symbols
+# to avoid matching plain English "looked at the thing dot com style"
+    priority: 2
+    title+body (regex): '[\w\.\+\-]+\s+AT\s+[\w\-]+\s+DOT\s+[\w\.\-]+'
+    ignore_blockquotes: true
+    moderators_exempt: false
+    action: filter
+    action_reason: "Obfuscated email (bare AT/DOT) [{{match}}]"
+---
+# Remove US mailing addresses (street number + street name + state/zip)
+# Catches: "123 Main St, City, CA 90210" or "456 Elm Ave Apt 7 New York NY 10001"
+    priority: 1
+    title+body (regex): '(?<!\d)\d{1,5}\s+[A-Za-z][\w\s]{0,29}(?:st(?:reet)?|ave(?:nue)?|blvd|boulevard|dr(?:ive)?|ln|lane|rd|road|ct|court|pl(?:ace)?|way|cir(?:cle)?|pkwy|parkway)\b[\s,]+[\w\s]+,?\s*\b[A-Z]{2}\b\s+\d{5}(?:\-\d{4})?(?!\d)'
+    ignore_blockquotes: true
+    moderators_exempt: false
+    action: filter
+    action_reason: "Possible mailing address detected [{{match}}]"
+    modmail_subject: "PII Alert: Mailing Address"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} was filtered because it matched a US mailing address pattern.
+
+        Please verify and re-approve if it is not personal information (e.g., a business or Amex office address).
+---
+# Re-check edited posts/comments for ALL PII patterns
+# Catches users who edit in PII after initial approval
+# Separators kept in sync with hardened primary PII rules above
+# Includes obfuscated email and per-digit CC patterns
+    priority: 1
+    is_edited: true
+    title+body (regex):
+        # CC grouped (any non-alnum separator)
+        - '(?<!\d)(?:4\d{3}|5[1-5]\d{2}|2(?:22[1-9]|2[3-9]\d|[3-6]\d{2}|7[01]\d|720))[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}(?!\d)'
+        - '(?<!\d)3[47]\d{2}[^\da-zA-Z]{0,6}\d{6}[^\da-zA-Z]{0,6}\d{5}(?!\d)'
+        # CC per-digit
+        - '(?<!\d)[1-6][\s\.\-_/]?\d(?:[\s\.\-_/]?\d){11,17}(?!\d)'
+        # CC contiguous
+        - '(?<!\d)\d{13,19}(?!\d)'
+        # SSN
+        - '(?<!\d)(?!000|666|9\d{2})\d{3}[^\da-zA-Z]{0,4}(?!00)\d{2}[^\da-zA-Z]{0,4}(?!0000)\d{4}(?!\d)'
+        # Email (with spaces around @)
+        - '(?<![\.\w\-])(?!(?:abuse|help|info|no[\s\.\-_]?reply|support)\b)[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
+        # Obfuscated email
+        - '(?i)(?!(?:abuse|help|info|no[\s\.\-_]?reply|support)\b)[\w\.\+\-]+\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>]\s*[\w\-]+\s*[\[\(\{<]\s*(?:dot|\.)\s*[\]\)\}>]\s*[\w\.\-]+'
+        # Obfuscated email (bare "at"/"dot" without brackets)
+        - '(?i)(?<![\.\w\-])[\w\.\+\-]+\s+(?:at|@)\s+[\w\-]+(?:\s+(?:dot|\.)\s+[\w\.\-]+)+\b'
+    ignore_blockquotes: true
+    moderators_exempt: false
+    action: filter
+    action_reason: "Edited content contains possible PII [{{match}}]"
+    modmail_subject: "PII Alert: Edited Content"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} was **edited** and now contains a pattern matching PII (credit card, SSN, or email).
+
+        This may indicate a user edited in sensitive data after initial posting. Please review immediately.
+---
+# Detect zero-width Unicode characters used to bypass pattern matching
+# Zero-width spaces (U+200B), zero-width joiners (U+200D), zero-width
+# non-joiners (U+200C), word joiners (U+2060), and other invisible chars
+# inserted between digits/letters to break regex matching.
+# Example: "4​1​2​3" (digits separated by zero-width spaces) evades \d{4}
+# Uses YAML double-quoted strings so \uXXXX escapes produce literal chars.
+    priority: 1
+    title+body (regex):
+        - "[\u200B\u200C\u200D\u200E\u200F\u2060\uFEFF]"
+    moderators_exempt: false
+    action: filter
+    action_reason: "Zero-width Unicode character detected — possible pattern evasion [{{match}}]"
+    modmail_subject: "PII Alert: Zero-Width Character Evasion"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} contains invisible zero-width Unicode characters that are commonly used to bypass PII detection patterns.
+
+        This is a strong indicator of intentional evasion. Please review the content carefully for hidden PII.
+---
+# Detect fullwidth/Unicode digit substitution used to bypass \d matching
+# Fullwidth digits (U+FF10-FF19), superscript digits, subscript digits,
+# and circled digits can represent numbers while evading standard \d regex.
+# Example: "４１２３ ４５６７ ８９０１ ２３４５" evades standard CC detection
+# Uses YAML double-quoted strings so \uXXXX escapes produce literal chars.
+    priority: 1
+    title+body (regex):
+        - "[\uFF10-\uFF19]{3,}"
+        - "[\u2070\u00B9\u00B2\u00B3\u2074-\u2079]{3,}"
+        - "[\u2080-\u2089]{3,}"
+        - "[\u2460-\u2473]{3,}"
+    moderators_exempt: false
+    action: filter
+    action_reason: "Unicode digit substitution detected [{{match}}]"
+    modmail_subject: "PII Alert: Unicode Digit Evasion"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} contains non-standard Unicode digit characters (fullwidth, superscript, subscript, or circled).
+
+        This may be an attempt to bypass PII detection. Please inspect the content for hidden numbers.
+---
+# Secondary defense: catch PII hidden inside blockquotes
+# Primary PII rules use ignore_blockquotes:true for fewer false positives,
+# but this creates a bypass — PII in > quotes is invisible to them.
+# This rule checks everything (ignore_blockquotes:false) with filter action.
+# Separators synced with primary rules.
+    priority: 2
+    title+body (regex):
+        - '(?<!\d)(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6011|65\d{2})[^\da-zA-Z]{0,6}\d{4,6}[^\da-zA-Z]{0,6}\d{4,5}(?!\d)'
+        - '(?<!\d)(?!000|666|9\d{2})\d{3}[^\da-zA-Z]{0,4}(?!00)\d{2}[^\da-zA-Z]{0,4}(?!0000)\d{4}(?!\d)'
+        - '(?<![\.\w\-])[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
+    ignore_blockquotes: false
+    moderators_exempt: false
+    action: filter
+    action_reason: "Possible PII in blockquoted content [{{match}}]"
+---
+
+
+# ============================================================================
+# SECTION 3: RULE 1 — REFERRAL PROTOCOL
+# "All referral activity is exclusively allowed in the designated thread.
+#  Violations result in a permanent ban. This includes veiled requests,
+#  and private messages."
+# ============================================================================
+
+---
+# Remove referral links — any referral URL or referral-related domain
+    priority: 1
+    body+title+url (regex):
+        - '(?i)refer\.amex'
+        - '(?i)americanexpress\.com.{0,30}(?:refer|mgm)'
+        - '(?i)(?:mgmresorts|hilton|marriott|hyatt|delta|united|jetblue|southwest)\.com.{0,30}refer'
+        - '(?i)(?:chase|citi|discover|capitalone|barclays|wellsfargo|usbank|bofa)\.com.{0,30}refer'
+        - '(?i)referr?al\s*(?:link|code|url|bonus)\b'
+        - '(?i)\breferr?al.*?credit.?card'
+    moderators_exempt: false
     action: remove
-    action_reason: "URL shortener detected [{{match}}]"
-    comment: "Your {{kind}} was removed because it contains a shortened URL. Please resubmit using the full, original URL so our community can verify the link destination."
+    action_reason: "Rule 1: Referral activity outside designated thread [{{match}}]"
+    modmail_subject: "Rule 1 Violation: Referral Protocol"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} was removed for referral activity outside the designated thread.
+
+        **Rule 1 states this results in a permanent ban.** Please review and take action:
+        1. [Ban user](/r/{{subreddit}}/about/banned)
+        2. Send ban message citing Rule 1
 ---
-# Block common Amex phishing domain patterns
+# Remove veiled referral solicitation
+    priority: 1
+    body+title (regex):
+        - '(?i)\b(?:DM|PM|message|msg)\s+(?:me|for)\s+(?:a\s+)?referr?al\b'
+        - '(?i)\bcheck\s+(?:my|the)\s+(?:profile|post\s*history|bio|flair)\s+(?:for|to\s+find)\s+(?:a\s+)?referr?al'
+        - '(?i)\bI?\s*(?:have|got|can\s+send)\s+(?:a\s+)?referr?al\s+(?:link|code|if|for)\b'
+        - '(?i)\bwho\s+(?:wants?|needs?)\s+(?:a\s+)?referr?al\b'
+        - '(?i)\breferr?al\s+(?:available|in\s+)?(?:my\s+)?(?:profile|bio|flair|DM|PM)\b'
+        - '(?i)\buse\s+(?:my|this)\s+(?:referr?al|link|code)\b'
+        - '(?i)\b(?:happy|glad|willing)\s+to\s+(?:send|share|give)\s+(?:a\s+)?referr?al\b'
+        - '(?i)\bif\s+(?:anyone|anybody|you)\s+(?:wants?|needs?)\s+(?:a\s+)?referr?al\b'
+    moderators_exempt: false
+    action: remove
+    action_reason: "Rule 1: Veiled referral request [{{match}}]"
+    modmail_subject: "Rule 1 Violation: Veiled Referral"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} was removed for veiled referral solicitation.
+
+        **Rule 1 states this results in a permanent ban.** Please review and take action.
+---
+# Remove DM/PM solicitation (often referral-related, violates Rule 1)
+    priority: 1
+    title+body (regex):
+        - '(?i)\b(?:send\s+(?:me\s+)?a?\s*)?(?:DM|PM|direct\s+messag)\w*\s+me\b'
+        - '(?i)\bDM\s+(?:me|sent|open)\b'
+        - '(?i)\bslide\s+(?:in(?:to)?)\s+(?:my\s+)?DMs?\b'
+        - '(?i)\bcheck\s+(?:your?\s+)?(?:DM|PM|inbox)\b'
+        - '(?i)\binbox\s+me\b'
+        - '(?i)\bhit\s+me\s+up\b|\bhmu\b'
+        - '(?i)\bprivate(?:ly)?\s+messag\w*\b'
+        - '(?i)\bchat\s+(?:me|request)\b'
+        - '(?i)\breach\s+out\s+(?:to\s+me\s+)?private(?:ly)?\b'
+        - '(?i)\bmessage\s+me\s+(?:private(?:ly)?|direct(?:ly)?)\b'
+        - "(?i)\\bI'?ll?\\s+(?:DM|PM|message|msg)\\s+you\\b"
+        - '(?i)\b(?:send|shoot)\s+(?:me\s+)?a\s+(?:DM|PM|message)\b'
+        - '(?i)\b(?:my\s+)?(?:DMs?|PMs?|inbox)\s+(?:is|are)\s+open\b'
+    action: remove
+    action_reason: "Rule 1: DM/PM solicitation [{{match}}]"
+    modmail_subject: "Rule 1 Violation: DM Solicitation"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} was removed for soliciting direct messages (Rule 1).
+
+        **Per Rule 1, violations result in a permanent ban.** Please review.
+---
+
+# ============================================================================
+# SECTION 4: RULE 2 — ILLEGAL ACTIVITY & EXTERNAL LINK PROHIBITION
+# "Discussion or promotion of illegal activities is strictly prohibited and
+#  results in a permanent ban. This includes any and all links outside of
+#  the American Express domain."
+# ============================================================================
+
+---
+# Remove ALL external links not on americanexpress.com or amex.com
+# Whitelisted: americanexpress.com, amex.com, reddit.com, redd.it
+# Boundary (?:[/\s?#]|$) prevents americanexpress.com.evil.com bypass
+    priority: 1
+    title+body+url (regex): 'https?://(?!(?:[\w\-]+\.)*(?:americanexpress|amex)\.com(?:[/\s?#:]|$))(?!(?:[\w\-]+\.)*(?:reddit\.com|redd\.it)(?:[/\s?#:]|$))[\w\.\-]+\.\w+'
+    moderators_exempt: true
+    action: remove
+    action_reason: "Rule 2: External link (non-Amex domain) [{{match}}]"
+    comment: "Your {{kind}} was removed because it contains a link outside the American Express domain. Per Rule 2, all external links are prohibited and result in a permanent ban. If you believe this was an error, [message the mods](https://www.reddit.com/message/compose?to=%2Fr%2F{{subreddit}})."
+---
+# Catch www. prefix URLs to non-whitelisted domains
+    priority: 1
+    title+body (regex): '(?i)(?<![/\w])www\.(?!(?:[\w\-]+\.)*(?:americanexpress|amex)\.com(?:[/\s?#:]|$))(?!(?:[\w\-]+\.)*(?:reddit\.com|redd\.it)(?:[/\s?#:]|$))[\w\.\-]+\.\w+'
+    moderators_exempt: true
+    action: remove
+    action_reason: "Rule 2: External link via www prefix [{{match}}]"
+    comment: "Your {{kind}} was removed because it references a website outside the American Express domain. Per Rule 2, all external links are prohibited."
+---
+# Catch bare domain names (no http:// or www.)
+    priority: 2
+    title+body (regex): '(?i)(?<![/\.\w@])(?!(?:americanexpress|amex)\.com)(?!reddit\.com|redd\.it)(?:[\w\-]+\.)+(?:com|net|org|io|co|me|info|xyz|ly|gl|be|gg|app|dev|us|uk|ca|au|de|fr|jp)\b(?:/[\w\.\-/]*)?'
+    ~body (regex): ['(?i)\.(?:jpg|jpeg|png|gif|pdf|doc|xlsx?|csv|zip|mp[34]|html?|css|js|py|txt|md|yml|yaml|json|xml|exe)\b', '(?i)v?\d+\.\d+\.\d+', '(?i)(?:a\.m\.|p\.m\.|e\.g\.|i\.e\.|vs\.|etc\.|Dr\.|Mr\.|Mrs\.)']
+    moderators_exempt: true
+    action: filter
+    action_reason: "Rule 2: Possible bare domain name [{{match}}]"
+---
+# Detect phishing — typosquats, homoglyphs, suspicious TLDs, deceptive markdown
+    priority: 1
     title+body+url (regex):
-        - 'amex[\-_]?(?:secure|verify|login|update|alert|confirm)'
-        - 'american[\-_]?express[\-_]?(?:secure|verify|login|update|alert)'
-        - 'amex\d+\.(?:com|net|org|info|xyz|top|click|link)'
+        - '(?i)(?:arnex|arnexx|ameix)\w*\.(?:com|net|org|co|io)'
+        - '(?i)(?:arnerican|amerlcan|americn|amercian)[\-_\.]?express'
+        - '(?i)american[\-_\.]?expres(?:[^s\w]|$)'
+        - '(?i)amex[\-_]?(?:secure|verify|login|update|alert|confirm)'
+        - '(?i)american[\-_]?express[\-_]?(?:secure|verify|login|update|alert)'
+        - '(?i)(?:amex|american[\-_]?express|credit[\-_]?card)[\w\-]*\.(?:xyz|tk|ml|ga|cf|top|click|buzz|icu|gq|work|date|racing|stream|bid|loan|win|party|link|rest|site|space|fun|monster|bar|cfd|sbs|quest)'
+        - '(?i)amex\d+\.(?:com|net|org)'
+        - '(?i)\[[^\]]*(?:amex|american\s*express)[^\]]*\]\((?:https?://)?(?!(?:[\w\-]+\.)?(?:americanexpress|amex)\.com(?:[/\s?#:]|$))[\w\.\-]+\.\w+(?:[/\w\.\-?#%&=]*)?\)'
+    moderators_exempt: false
     action: remove
-    action_reason: "Possible phishing domain [{{match}}]"
+    action_reason: "Rule 2: Phishing domain detected [{{match}}]"
     modmail_subject: "Phishing Alert"
     modmail: |
         {{permalink}}
 
-        The above {{kind}} by /u/{{author}} matched a known phishing domain pattern: `{{match}}`
+        The above {{kind}} by /u/{{author}} matched a phishing pattern: `{{match}}`
 
-        Please investigate and consider a ban if this is confirmed phishing.
+        **This is a permanent ban offense (Rule 2).** Investigate immediately.
 ---
-# Filter financial scam keywords
+# Detect discussion/promotion of illegal activities
+    priority: 1
     title+body (regex):
-        - '\b(?:wire|zelle|venmo|cashapp)\s+(?:me|transfer|send)\b'
-        - '\bgift\s*card\s*(?:payment|pay\s+with|as\s+payment)\b'
-        - '\b(?:nigerian|advance[\-\s]?fee|lottery\s+win)\b'
+        - '(?i)\b(?:money\s+launder|launder(?:ing)?\s+money)\b'
+        - '(?i)\b(?:identity\s+(?:theft|fraud|steal)|steal(?:ing)?\s+identity)\b'
+        - '(?i)\b(?:counterfeit|stolen|cloned|skimmed)\s+(?:card|credit|debit)\b'
+        - '(?i)\bcard\s*(?:crack|carding|skim(?:ming)?|clone|cloning)\b'
+        - '(?i)\b(?:bust[\-\s]?out|synthetic[\-\s]?identity)\s+(?:fraud|scheme)\b'
+        - '(?i)\b(?:application|app)\s+fraud\b'
+        - '(?i)\b(?:fraudulent|fake)\s+(?:charge|transaction|claim|application|identity|ID|SSN|documents?)\b'
+        - '(?i)\bhow\s+to\s+(?:commit|do|get\s+away\s+with)\s+(?:fraud|theft)\b'
+    moderators_exempt: false
+    action: remove
+    action_reason: "Rule 2: Illegal activity discussion [{{match}}]"
+    modmail_subject: "Rule 2 Violation: Illegal Activity"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} was removed for discussing or promoting illegal activity.
+
+        **Rule 2 states this results in a permanent ban.** Please review and take action.
+---
+# Detect Amex employee impersonation
+    priority: 1
+    title+body (regex):
+        - "(?i)\\b(?:i\\s+work|i\\s+am|i'm)\\s+(?:at|for|with)\\s+(?:amex|american\\s*express)\\b"
+        - '(?i)\bamex\s+(?:employee|representative|agent|insider)\b'
+        - '(?i)\b(?:inside|insider)\s+(?:info|information|knowledge|tip)\s+(?:from|about|on)\s+amex\b'
+        - '(?i)\b(?:source|contact|friend|buddy)\s+(?:at|inside|within)\s+(?:amex|american\s*express)\b'
+    moderators_exempt: false
     action: filter
-    action_reason: "Possible scam language [{{match}}]"
+    action_reason: "Rule 2: Possible Amex impersonation [{{match}}]"
+    modmail_subject: "Impersonation Alert"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} may claim insider Amex access. Please verify — if this is a verified Amex representative, re-approve. Otherwise, potential Rule 2 violation.
+---
+# Detect financial/crypto scam patterns
+    priority: 1
+    title+body (regex):
+        - '(?i)\b(?:wire|zelle|venmo|cashapp|cash\s*app|paypal)\s+(?:me|transfer|send)\b'
+        - '(?i)\bgift\s*card\s*(?:payment|pay\s+with|as\s+payment)\b'
+        - '(?i)\b(?:nigerian|advance[\-\s]?fee|lottery\s+win(?:ning)?)\b'
+        - '(?i)\b(?:guaranteed|risk[\-\s]?free)\s+(?:returns?|profit|income|investment)\b'
+        - '(?i)\b(?:double|triple|10x|100x)\s+your\s+(?:money|investment|points|MR)\b'
+        - '(?i)\b(?:crypto|bitcoin|ethereum|nft)\s+(?:opportunity|investment|profit)\b'
+        - '(?i)\bdm\s+(?:me|for)\s+(?:investment|trading|crypto)\b'
+    action: remove
+    action_reason: "Rule 2: Financial scam language [{{match}}]"
+    modmail_subject: "Rule 2: Scam Alert"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} matched scam language. **Per Rule 2, this is a ban offense.**
 ---
 
 # ============================================================================
-# SECTION 4: ACCOUNT QUALITY GATES
-# Uses CQS (Contributor Quality Score) as primary signal,
-# with karma/age as fallback layers.
-# Ref: https://support.reddithelp.com/hc/en-us/articles/19023371170196
+# SECTION 5: ACCOUNT QUALITY GATES
 # ============================================================================
 
 ---
-# CQS gate: Filter lowest-tier contributors (submissions)
-# CQS catches spam that karma/age checks miss per Reddit data
 type: submission
 author:
     contributor_quality: "< low"
 action: filter
 action_reason: "CQS below low threshold"
 ---
-# CQS gate: Filter lowest-tier contributors (comments)
 type: comment
 author:
     contributor_quality: "< low"
 action: filter
 action_reason: "CQS below low threshold"
 ---
-# New account gate (submissions): low karma AND young account
-# Both conditions must be true (satisfy_any_threshold: false)
 type: submission
 author:
     satisfy_any_threshold: false
@@ -199,29 +526,19 @@ action: remove
 action_reason: "New account: combined karma < 10, account age < 30 days"
 comment: "Your post was removed because your account does not yet meet our minimum karma and account age requirements. Please participate in other communities first. If you believe this was an error, contact the mods via modmail."
 ---
-# Low karma + link in submission
-type: submission
-author:
-    combined_subreddit_karma: "< 500"
-body+url (regex): 'https?://'
-action: remove
-action_reason: "Low subreddit karma, contains link"
----
-# Low karma + link in comment
 type: comment
 author:
-    combined_subreddit_karma: "< 500"
-body (regex): 'https?://'
-action: remove
-action_reason: "Low subreddit karma, contains link"
+    satisfy_any_threshold: false
+    combined_karma: "< 5"
+    account_age: "< 7 days"
+action: filter
+action_reason: "New account comment: karma < 5, age < 7 days"
 ---
-# Troll account prevention (combined karma check, not just comment karma)
     author:
         combined_karma: "< -25"
     action: remove
     action_reason: "Troll account (combined karma < -25)"
 ---
-# Inactive/suspicious aged account
 type: comment
 author:
     account_age: "> 1 year"
@@ -231,13 +548,128 @@ action_reason: "Inactive aged account (>1yr, <1 combined karma)"
 ---
 
 # ============================================================================
-# SECTION 5: REPORT HANDLING
+# SECTION 6: RULE 5 — USER DECORUM
+# "Maintain respectful conduct; use the block and report features."
 # ============================================================================
 
 ---
-# Auto-remove at 3+ reports (raised from 2 to reduce weaponization)
+    priority: 1
+    title+body (regex):
+        - '(?i)\b(?:retard(?:ed)?|f[a@]g(?:got)?|tr[a@]nn(?:y|ie)|d[yi]ke|k[i1]ke|sp[i1]c|ch[i1]nk|w[e3]tb[a@]ck|c[o0][o0]n)\b'
+    moderators_exempt: false
+    action: remove
+    action_reason: "Rule 5: Hate speech/slur detected [{{match}}]"
+    modmail_subject: "Rule 5 Violation: Hate Speech"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} was removed for a slur. **Rule 5 requires respectful conduct.** Consider a ban for repeat offenders.
+---
+    priority: 1
+    title+body (regex):
+        - '(?i)\byou(?:r|\s+are)?\s+(?:a\s+)?(?:idiot|moron|stupid|dumb|loser|pathetic|worthless|trash|garbage|piece\s+of\s+shit)\b'
+        - '(?i)\bkill\s+your\s*self\b|\bkys\b'
+        - '(?i)\bgo\s+(?:fuck|die|hang)\s+your\s*self\b'
+        - '(?i)\bhope\s+you\s+(?:die|get\s+(?:cancer|hit|fired|banned))\b'
+        - '(?i)\bnobody\s+(?:likes|cares\s+about|asked)\s+you\b'
+        - '(?i)\bshut\s+(?:the\s+fuck\s+)?up\b'
+    moderators_exempt: false
+    action: filter
+    action_reason: "Rule 5: Personal attack/insult [{{match}}]"
+    comment: "Your comment was filtered for review because it may violate Rule 5 (User Decorum). Please maintain respectful conduct. If another user is bothering you, use the **block** and **report** features rather than engaging."
+---
+    priority: 1
+    title+body (regex):
+        - "(?i)\\bI\\s*(?:will|am\\s+going\\s+to|gonna)\\s+(?:find|hunt|track|dox|hack|hurt|kill|sue)\\s+you\\b"
+        - '(?i)\bwatch\s+your\s+back\b'
+        - '(?i)\byou(?:r|\s+will)\s+(?:regret|pay\s+for)\s+this\b'
+    moderators_exempt: false
+    action: remove
+    action_reason: "Rule 5: Threat detected [{{match}}]"
+    modmail_subject: "Rule 5 Violation: Threat"
+    modmail: |
+        {{permalink}}
+
+        The above {{kind}} by /u/{{author}} contains a potential threat. **Consider permanent ban per Rule 5.**
+---
+
+# ============================================================================
+# SECTION 7: RULE 3 — SUBMISSION QUALITY
+# "Thorough pre-posting research is required. Low-effort and duplicate
+#  posts will be removed. Use the Monthly FAQ."
+# ============================================================================
+
+---
+type: submission
+~flair_text (regex): '.+'
+action: remove
+action_reason: "Rule 3: Submission missing flair"
+comment: |
+    Your post was removed because it does not have a flair (Rule 3). Please add a flair and resubmit.
+
+    Common flairs: Question, Data Point, Discussion, News, Rant, Review, Trip Report.
+
+    *If you need help, [message the mods](https://www.reddit.com/message/compose?to=%2Fr%2F{{subreddit}}).*
+---
+type: submission
+title (regex, full-exact): '(?i)^(?:help|question|amex|advice|please|urgent|asap|!!!+|wtf|omg|idk|smh|\?\?+|\.+|[a-z]{1,3})$'
+action: remove
+action_reason: "Rule 3: Low-effort title [{{match}}]"
+comment: "Your post was removed for a low-effort title (Rule 3). Resubmit with a descriptive title (e.g., 'Can I upgrade Gold to Platinum mid-year?' not 'Question'). Check the **Monthly FAQ** first — thorough pre-posting research is required."
+---
+type: submission
+title (regex, full-exact): '^[^a-z]*[A-Z][^a-z]*[A-Z][^a-z]*[A-Z][^a-z]{12,}$'
+action: remove
+action_reason: "Rule 3: All caps title"
+comment: "Your post was removed because the title is in ALL CAPS (Rule 3). Please resubmit with normal capitalization."
+---
+type: submission
+body (regex, full-exact): '^\s*$'
+domain (includes): ["i.redd.it", "imgur.com", "i.imgur.com"]
+action: remove
+action_reason: "Rule 3: Image post with no context"
+comment: |
+    Your post was removed because it is an image with no context text (Rule 3). Please resubmit with:
+
+    - What card or product this relates to
+    - Your question or discussion topic
+    - Relevant details (approval date, credit score range, etc.)
+
+    Check the **Monthly FAQ** before posting — thorough research is required.
+---
+type: submission
+title (regex):
+    - '(?i)^(?:what|which)\s+(?:card|amex)\s+(?:should|is\s+best|do\s+you\s+recommend)'
+    - '(?i)^(?:should\s+I|is\s+it\s+worth|worth\s+it\s+to)\s+(?:get|apply|upgrade|downgrade|cancel|keep)'
+    - '(?i)^(?:first|my\s+first|beginner|new\s+to)\s+(?:amex|card|credit)'
+    - '(?i)^what\s+is\s+(?:the\s+)?(?:annual\s+fee|AF|SUB|pop[\-\s]?up)'
+action: filter
+action_reason: "Rule 3: Common FAQ question — redirect to Monthly FAQ"
+comment: "Your post may be a frequently asked question. Per Rule 3, check the **Monthly FAQ** thread first (pinned at top of r/amex). Thorough pre-posting research is required. If not answered there, repost with specific details."
+---
+
+# ============================================================================
+# SECTION 8: RULE 4 — MODERATOR INTERACTION (informational)
+# "Moderator decisions are final; unquestioned compliance is mandatory.
+#  Disrespect or ban evasion results in a permanent ban."
+# NOTE: Primarily enforced manually. Below rule is for awareness only.
+# ============================================================================
+
+---
+type: comment
+body (regex): '(?i)\bmod(?:erator)?s?\s+(?:are|is)\s+(?:trash|garbage|terrible|horrible|awful|corrupt|abusing|power\s*trip)|\b(?:fuck|screw)\s+(?:the\s+)?mod(?:erator)?s?\b|\bmod\s+abuse\b|\bunfair(?:ly)?\s+(?:banned|removed|censored)\b'
+action: filter
+action_reason: "Rule 4: Possible moderator complaint [{{match}}]"
+---
+
+# ============================================================================
+# SECTION 9: REPORT HANDLING
+# ============================================================================
+
+---
     reports: 3
     action: remove
+    modmail_subject: "Auto-removed: 3+ Reports"
     modmail: |
         {{permalink}}
 
@@ -247,22 +679,21 @@ action_reason: "Inactive aged account (>1yr, <1 combined karma)"
 ---
 
 # ============================================================================
-# SECTION 6: COMMUNITY HELPER BOTS
-# Scoped narrowly to reduce false positives.
+# SECTION 10: COMMUNITY HELPER BOTS
+# AutoMod does not act on its own comments, so americanexpress.com links
+# in bot responses will not trigger Rule 2 enforcement.
 # ============================================================================
 
 ---
-# Acronym helper: only responds when user explicitly asks about an acronym
-# Removed overly broad "what is [word]" regex that triggered on all questions
-# NOTE: The URL below uses tinyurl.com, which is blocked by the URL shortener
-#   rule. AutoMod does not act on its own comments, so this is functional, but
-#   consider replacing with the full destination URL for transparency.
 type: comment
 body (includes-word): ["acronym", "acronyms"]
-comment: "It looks like you may be asking about an acronym. For a comprehensive glossary, check out [this guide](https://tinyurl.com/pointsprimer) (credit: Dapper_Reputation_16). This is an automated response. If triggered in error, please downvote."
+comment: |
+    Common r/amex acronyms:
+
+    **AF** = Annual Fee | **AU** = Authorized User | **CLI** = Credit Limit Increase | **CL** = Credit Limit | **FR** = Financial Review | **MR** = Membership Rewards | **NLL** = No Lifetime Language | **PC** = Product Change | **RAT** = Referral A Friend Tool | **SUB** = Sign-Up Bonus | **5/24** = Chase's 5 cards in 24 months rule
+
+    *This is an automated response. If triggered in error, please downvote.*
 ---
-# Pop-up jail helper: scoped to Amex-specific context
-# Requires BOTH "pop" or "popup" AND eligibility language
 type: submission
 body (regex): '(?:pop[\-\s]?up|popup)[\s\S]*?(?:jail|ineligib|not\s+eligible)|(?:jail|ineligib|not\s+eligible)[\s\S]*?(?:pop[\-\s]?up|popup)'
 comment: |
@@ -270,46 +701,89 @@ comment: |
 
     Nobody truly knows how Amex determines who to put in pop-up jail. Your ineligibility varies by offer, so you could try applying for a different card, a different offer for the same card, applying without any offer, or simply waiting.
 
-    **Potential workaround:** When you get the pop-up, do not click anything. Hit the back button until you reach the blank app page or the Apply Now button. Apply again. This may bypass the algorithm and give you a 14-day review message with no hard pull (essentially sending your app for manual review). If approved, you will receive an email to accept (hard pull) or decline. Always call Amex to confirm the SUB offer is attached before accepting.
+    **Potential workaround:** When you get the pop-up, do not click anything. Hit the back button until you reach the blank app page or the Apply Now button. Apply again. This may bypass the algorithm and give you a 14-day review message with no hard pull. If approved, you will receive an email to accept (hard pull) or decline. Always call Amex to confirm the SUB offer is attached before accepting.
 
     *This is an automated response. If triggered in error, please downvote.*
 ---
-# Not eligible (standalone, no pop-up context)
 type: submission
 body (regex): '\bnot\s+eligible\b'
 ~body (regex): '(?:pop[\-\s]?up|popup)'
-comment: "It looks like you may be experiencing an eligibility issue. This could be related to pop-up jail, the once-per-lifetime rule, or the 5/24 rule (Chase). You can Google 'Amex pop-up jail' for more information. This is an automated response. If triggered in error, please downvote."
+comment: "It looks like you may be experiencing an eligibility issue. This could be related to pop-up jail, the once-per-lifetime rule, or the 5/24 rule (Chase). Search r/amex for recent data points. This is an automated response. If triggered in error, please downvote."
 ---
-# Return protection helper
 type: submission
 body (includes-word): "return protection"
 comment: "It looks like you may be asking about return protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/return-protection-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response."
 ---
-# Trip delay/cancellation helper
 type: submission
 body (regex): '\btrip\s+(?:delay|cancel|interrupt)'
 comment: "It looks like you may be asking about trip cancellation/delay insurance. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/trip-cancellation-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response."
 ---
-# Purchase protection helper
 type: submission
 body (includes-word): "purchase protection"
 comment: "It looks like you may be asking about purchase protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/purchase-protection-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response."
 ---
-# Cell phone protection helper
 type: submission
 body (regex): '\bcell(?:\s+phone)?\s+protection\b'
 comment: "It looks like you may be asking about cell phone protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/cell-phone-protection.html) and ask pointed questions about any portions that are unclear. This is an automated response."
 ---
-
-# ============================================================================
-# SECTION 7: MESSAGING / SOLICITATION FILTERS
-# Scoped to reduce false positives from "3 PM" or "DM" in other contexts
-# ============================================================================
-
+type: submission
+body (regex): '\b(?:extended|ext)\s+warrant(?:y|ies)\b'
+comment: "It looks like you may be asking about extended warranty protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/extended-warranty-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response. If triggered in error, please downvote."
 ---
-# Filter solicitation of direct messages
-type: comment
-body (regex): '\b(?:send\s+(?:me\s+)?a?\s*)?(?:DM|PM|direct\s+messag)\w*\s+me\b|\bDM\s+(?:me|sent|open)\b|\bslide\s+(?:in(?:to)?)\s+(?:my\s+)?DMs?\b|\bcheck\s+(?:your?\s+)?(?:DM|PM|inbox)\b'
-action: filter
-action_reason: "DM/PM solicitation detected [{{match}}]"
+type: submission
+body (regex): '\b(?:car|auto|vehicle)\s+(?:rental|rent)\s+(?:insurance|protection|coverage|CDW|LDW)\b|\b(?:CDW|LDW)\s+(?:coverage|protection|insurance)\b'
+comment: "It looks like you may be asking about car rental insurance. Amex offers Premium Car Rental Protection as an optional benefit on many cards. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/car-rental-loss-and-damage-insurance-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response. If triggered in error, please downvote."
+---
+type: submission
+body (regex): '\b(?:annual\s+fee|AF)\s+(?:retention|retent|waiv|credit|offer)\b|\bretention\s+(?:offer|call|department)\b'
+comment: |
+    It looks like you may be asking about annual fee retention offers.
+
+    **Tips for a successful retention call:**
+    1. Call the number on the back of your card or chat via the Amex app
+    2. Ask to speak with the "Member Services" or "Retention" department
+    3. Politely explain you are considering closing due to the annual fee
+    4. They may offer statement credits, bonus points, or a fee waiver
+    5. You are not obligated to accept — you can ask for time to think about it
+
+    Check r/amex for recent data points on retention offers for your specific card.
+
+    *This is an automated response. If triggered in error, please downvote.*
+---
+type: submission
+body (regex): '\bamex\s+(?:offer|deal)s?\b|\badd(?:ed|ing)?\s+(?:all\s+)?offers?\b'
+comment: "It looks like you may be asking about Amex Offers. Offers are personalized and vary by cardmember. You can view and add offers in the Amex app under the \"Offers\" tab or at [americanexpress.com/offers](https://www.americanexpress.com/us/rewards/membership-rewards/offers/index.html). Remember: offers must be added to your card *before* the purchase. This is an automated response. If triggered in error, please downvote."
+---
+type: submission
+body (regex): '\btransfer\s+(?:partner|point|MR)s?\b|\b(?:MR|membership\s+rewards?)\s+(?:transfer|point)\b'
+comment: |
+    It looks like you may be asking about Membership Rewards transfer partners.
+
+    Amex MR points transfer to numerous airline and hotel programs. For the current list of partners and transfer ratios, see [Amex Transfer Partners](https://www.americanexpress.com/us/rewards/membership-rewards/travel/points-transfer.html).
+
+    **Key tips:**
+    - Transfers are usually instant but can take up to 48 hours
+    - Most transfers are 1:1 but some partners have different ratios
+    - Transfers are one-way and cannot be reversed
+    - Watch for periodic transfer bonuses (e.g., 30% bonus to certain partners)
+
+    *This is an automated response. If triggered in error, please downvote.*
+---
+type: submission
+body (regex): '\bfinancial\s+review\b|\b(?:amex|american\s*express)\b[\s\S]{0,200}?\bFR\b|\bFR\b[\s\S]{0,200}?\b(?:amex|american\s*express)\b|\bfinrev\b'
+~body (regex): '\b(?:fire\s+department|first\s+responder|federal\s+register|francs?|france|friday)\b'
+comment: |
+    It looks like you may be asking about an Amex Financial Review (FR).
+
+    A Financial Review is when Amex requests documentation to verify your income and spending. **Do not panic.** Key things to know:
+
+    1. Respond promptly — provide the requested documents (tax returns, bank statements, etc.)
+    2. During the review, your cards may be restricted
+    3. The review typically takes 2-6 weeks
+    4. Being honest and cooperative is the best strategy
+    5. Do NOT close your cards during the review
+
+    Search r/amex for recent FR data points and experiences.
+
+    *This is an automated response. If triggered in error, please downvote.*
 ---
