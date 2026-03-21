@@ -399,7 +399,7 @@
 # Whitelisted: americanexpress.com, amex.com, reddit.com, redd.it
 # Boundary (?:[/\s?#]|$) prevents americanexpress.com.evil.com bypass
     priority: 1
-    title+body+url (regex): 'https?://(?!(?:[\w\-]+\.)*(?:americanexpress|amex)\.com(?:[/\s?#:]|$))(?!(?:[\w\-]+\.)*(?:reddit\.com|redd\.it|reddithelp\.com|redditmedia\.com|redditstatic\.com)(?:[/\s?#:]|$))[\w\.\-]+\.\w+'
+    title+body+url (regex): 'https?://(?!(?:[\w\-]+\.)*(?:americanexpress|amex)\.com(?:[/\s?#:]|$))(?!(?:[\w\-]+\.)*(?:reddit\.com|redd\.it)(?:[/\s?#:]|$))[\w\.\-]+\.\w+'
     moderators_exempt: true
     action: remove
     action_reason: "Rule 2: External link (non-Amex domain) [{{match}}]"
