@@ -655,7 +655,7 @@ comment: "Your post may be a frequently asked question. Per Rule 3, check the **
 
 ---
 type: comment
-body (regex): '(?i)\bmod(?:erator)?s?\s+(?:are|is)\s+(?:trash|garbage|terrible|horrible|awful|corrupt|abusing|power\s*trip)|(?i)\b(?:fuck|screw)\s+(?:the\s+)?mod(?:erator)?s?\b|(?i)\bmod\s+abuse\b|(?i)\bunfair(?:ly)?\s+(?:banned|removed|censored)\b'
+body (regex): '(?i)\bmod(?:erator)?s?\s+(?:are|is)\s+(?:trash|garbage|terrible|horrible|awful|corrupt|abusing|power\s*trip)|\b(?:fuck|screw)\s+(?:the\s+)?mod(?:erator)?s?\b|\bmod\s+abuse\b|\bunfair(?:ly)?\s+(?:banned|removed|censored)\b'
 action: filter
 action_reason: "Rule 4: Possible moderator complaint [{{match}}]"
 ---
