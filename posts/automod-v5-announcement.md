@@ -16,7 +16,7 @@ This post walks you through what changed, what stayed, and — most importantly 
 
 This is the biggest upgrade. The old config had two basic PII rules:
 
-- A simple email pattern (`word@word.word`) that missed obfuscated addresses
+- A simple email pattern (a word, then an "at" symbol, then another word, then a dot and final word) that missed obfuscated addresses
 - A credit card pattern that only covered four card types and had no separator flexibility
 
 **The new config has 11 layered PII rules** covering every common exposure vector:
@@ -29,7 +29,7 @@ This is the biggest upgrade. The old config had two basic PII rules:
 | Long digit dumps (e.g., raw 16-digit strings) | ❌ | ✅ Caught (filter, not remove) |
 | Social Security Numbers | ❌ | ✅ Caught and removed |
 | US phone numbers | ❌ | ✅ Caught (with common false-positive exclusions) |
-| Email addresses | Basic only | ✅ Standard, spaced-@ bypass, and obfuscated (`user [at] domain [dot] com`) |
+| Email addresses | Basic only | ✅ Standard, spaced-@ bypass, and obfuscated formats where the at-sign and dots are written out in words |
 | Mailing addresses | ❌ | ✅ Caught (filter for mod review) |
 | PII added via **post editing** | ❌ | ✅ Edited content is re-scanned |
 | Unicode evasion (invisible chars, fullwidth digits) | ❌ | ✅ Caught |
@@ -173,7 +173,7 @@ If a removal feels like an error, you can always [message the mods](https://www.
 
 ## 🛠️ For the Curious: Full Config is Public
 
-The full AutoMod configuration is maintained openly at [github.com/AICincy/Amex-Automod-Wiki](https://github.com/AICincy/Amex-Automod-Wiki). If you're a mod on another subreddit or just interested in how it works, the repository includes a full reference guide and CI validation pipeline.
+The full AutoMod configuration is maintained openly; to view it, search GitHub for the repository `AICincy/Amex-Automod-Wiki`. If you're a mod on another subreddit or just interested in how it works, the repository includes a full reference guide and CI validation pipeline.
 
 ---
 
