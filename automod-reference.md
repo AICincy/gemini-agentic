@@ -1079,7 +1079,7 @@ action_reason: "Approve reported content from whitelisted user"
 
 Alert the subreddit moderators when certain things happen.
 
-when certain things happen. Reported Items Notify the moderators if something recieves a certain number of reports. It is recommended to set the number of required reports to 2 or 3 for smaller subreddits and 3 to 5 for larger ones. This rule can be copy-pasted directly to your AutoModerator configuration with or without modification.
+when certain things happen. Reported Items Notify the moderators if something receives a certain number of reports. It is recommended to set the number of required reports to 2 or 3 for smaller subreddits and 3 to 5 for larger ones. This rule can be copy-pasted directly to your AutoModerator configuration with or without modification.
 
 
 ```yaml
