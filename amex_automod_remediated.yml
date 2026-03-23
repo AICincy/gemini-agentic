@@ -244,7 +244,7 @@
         # Phone
         - '(?<!\d)(?:\+?1[^\da-zA-Z]{0,4})?\(?\d{3}\)?[^\da-zA-Z]{0,4}\d{3}[^\da-zA-Z]{0,4}\d{4}(?!\d)'
         # Email (with spaces around @)
-        - '(?<![\.\w\-])(?!(?:abuse|help|info|no-?reply|phishing|service|spoof|support)\s*@)[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
+        - '(?<![\.\w\-])(?!(?:abuse|help|info|no[\s\.\-_]?reply|phishing|service|spoof|support)\s*@)[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
         # Obfuscated email — bracketed
         - '(?i)(?!(?:abuse|help|info|no[\s\.\-_]?reply|phishing|service|spoof|support)\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>])[\w\.\+\-]+\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>]\s*[\w\-]+\s*[\[\(\{<]\s*(?:dot|\.)\s*[\]\)\}>]\s*[\w\.\-]+'
         # Obfuscated email — ALL CAPS bare keywords (exclude common service addresses)
