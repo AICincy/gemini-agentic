@@ -265,7 +265,7 @@
 # Zero-width spaces (U+200B), zero-width joiners (U+200D), zero-width
 # non-joiners (U+200C), word joiners (U+2060), and other invisible chars
 # inserted between digits/letters to break regex matching.
-# Example: "4\\u200B1\\u200B2\\u200B3" (digits separated by zero-width spaces) evades \d{4}
+# Example: "4\u200B1\u200B2\u200B3" (digits separated by zero-width spaces) evades \d{4}
 # Uses YAML double-quoted strings so \uXXXX escapes produce literal chars.
     priority: 1
     title+body (regex):
