@@ -247,8 +247,8 @@
         - '(?<![\.\w\-])(?!(?:abuse|help|info|no-?reply|phishing|service|spoof|support)\s*@)[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
         # Obfuscated email — bracketed
         - '(?i)(?!(?:abuse|help|info|no[\s\.\-_]?reply|phishing|service|spoof|support)\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>])[\w\.\+\-]+\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>]\s*[\w\-]+\s*[\[\(\{<]\s*(?:dot|\.)\s*[\]\)\}>]\s*[\w\.\-]+'
-        # Obfuscated email — ALL CAPS bare keywords
-        - '[\w\.\+\-]+\s+AT\s+[\w\-]+\s+DOT\s+[\w\.\-]+'
+        # Obfuscated email — ALL CAPS bare keywords (exclude common service addresses)
+        - '(?!(?:ABUSE|HELP|INFO|NO[\s\.\-_]?REPLY|PHISHING|SERVICE|SPOOF|SUPPORT)\s+AT\s+)[\w\.\+\-]+\s+AT\s+[\w\-]+\s+DOT\s+[\w\.\-]+'
     ignore_blockquotes: true
     moderators_exempt: true
     action: filter
