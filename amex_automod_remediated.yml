@@ -253,7 +253,7 @@
 # Zero-width spaces (U+200B), zero-width joiners (U+200D), zero-width
 # non-joiners (U+200C), word joiners (U+2060), and other invisible chars
 # inserted between digits/letters to break regex matching.
-# Example: "4​1​2​3" (digits separated by zero-width spaces) evades \d{4}
+# Example: "4\\u200B1\\u200B2\\u200B3" (digits separated by zero-width spaces) evades \d{4}
 # Uses YAML double-quoted strings so \uXXXX escapes produce literal chars.
     priority: 1
     title+body (regex):
@@ -272,7 +272,7 @@
 # Detect fullwidth/Unicode digit substitution used to bypass \d matching
 # Fullwidth digits (U+FF10-FF19), superscript digits, subscript digits,
 # and circled digits can represent numbers while evading standard \d regex.
-# Example: "４１２３ ４５６７ ８９０１ ２３４５" evades standard CC detection
+# Example: "\\uFF14\\uFF11\\uFF12\\uFF13 \\uFF14\\uFF15\\uFF16\\uFF17 \\uFF18\\uFF19\\uFF10\\uFF11 \\uFF12\\uFF13\\uFF14\\uFF15" evades standard CC detection
 # Uses YAML double-quoted strings so \uXXXX escapes produce literal chars.
     priority: 1
     title+body (regex):
