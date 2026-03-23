@@ -424,9 +424,9 @@
 # ============================================================================
 # SECTION 3a: DESIGNATED REFERRAL THREAD MANAGEMENT
 # Designated thread: https://www.reddit.com/r/amex/submit/?scheduled_post_id=437126
-# Identified by title regex. If the post title changes, update the two rules
+# Identified by title regex. If the post title changes, update both rules
 # below AND the corresponding ~title exemptions in the Rule 1 rules above --
-# all three must stay in sync to function correctly.
+# all four locations (2 Section 3a rules + 2 Rule 1 ~title exemptions) must stay in sync to function correctly.
 #
 # 30-day limit per user: AutoMod cannot track per-user comment history
 # (documented limitation -- see automod-reference.md). Enforcement mechanism:
