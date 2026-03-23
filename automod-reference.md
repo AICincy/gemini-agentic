@@ -838,7 +838,7 @@ action: remove
 action_reason: "Indirect link to hosted image #5 [{{url}}]"
 comment: |
     Your submission has been automatically removed due to an indirect link to a hosted image.
-    Unfortunately, the media host {{domain}} is not compatable with mobile apps and/or RES.
+    Unfortunately, the media host {{domain}} is not compatible with mobile apps and/or RES.
     Please be considerate of mobile and RES users and resubmit your content using a different media host.
 ```
 
