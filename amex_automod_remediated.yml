@@ -108,7 +108,7 @@
     ignore_blockquotes: true
     moderators_exempt: true
     action: filter
-    action_reason: "Contiguous digit run — possible unformatted card number [{{match}}]"
+    action_reason: "Contiguous digit run -- possible unformatted card number [{{match}}]"
     modmail_subject: "PII Alert: Possible Card Number"
     modmail: |
         {{permalink}}
@@ -272,7 +272,7 @@
         - "[\u200B\u200C\u200D\u200E\u200F\u2060\uFEFF]"
     moderators_exempt: true
     action: filter
-    action_reason: "Zero-width Unicode character detected — possible pattern evasion [{{match}}]"
+    action_reason: "Zero-width Unicode character detected -- possible pattern evasion [{{match}}]"
     modmail_subject: "PII Alert: Zero-Width Character Evasion"
     modmail: |
         {{permalink}}
@@ -401,6 +401,7 @@
         - "(?i)\\bI'?ll?\\s+(?:DM|PM|message|msg)\\s+you\\b"
         - '(?i)\b(?:send|shoot)\s+(?:me\s+)?a\s+(?:DM|PM|message)\b'
         - '(?i)\b(?:my\s+)?(?:DMs?|PMs?|inbox)\s+(?:is|are)\s+open\b'
+    moderators_exempt: true
     action: remove
     action_reason: "Rule 1: DM/PM solicitation [{{match}}]"
     modmail_subject: "Rule 1 Violation: DM Solicitation"
@@ -504,7 +505,7 @@
     modmail: |
         {{permalink}}
 
-        The above {{kind}} by /u/{{author}} may claim insider Amex access. Please verify — if this is a verified Amex representative, re-approve. Otherwise, potential Rule 2 violation.
+        The above {{kind}} by /u/{{author}} may claim insider Amex access. Please verify -- if this is a verified Amex representative, re-approve. Otherwise, potential Rule 2 violation.
 ---
 # Detect financial/crypto scam patterns
     priority: 1
@@ -516,6 +517,7 @@
         - '(?i)\b(?:double|triple|10x|100x)\s+your\s+(?:money|investment|points|MR)\b'
         - '(?i)\b(?:crypto|bitcoin|ethereum|nft)\s+(?:opportunity|investment|profit)\b'
         - '(?i)\bdm\s+(?:me|for)\s+(?:investment|trading|crypto)\b'
+    moderators_exempt: true
     action: remove
     action_reason: "Rule 2: Financial scam language [{{match}}]"
     modmail_subject: "Rule 2: Scam Alert"
@@ -558,7 +560,6 @@ author:
     account_age: "< 7 days"
 action: filter
 action_reason: "New account comment: karma < 5, age < 7 days"
----
 ---
 type: any
 author:
@@ -642,7 +643,7 @@ type: submission
 title (regex, full-exact): '(?i)^(?:help|question|amex|advice|please|urgent|asap|!!!+|wtf|omg|idk|smh|\?\?+|\.+|[a-z]{1,3})$'
 action: remove
 action_reason: "Rule 3: Low-effort title [{{match}}]"
-comment: "Your post was removed for a low-effort title (Rule 3). Resubmit with a descriptive title (e.g., 'Can I upgrade Gold to Platinum mid-year?' not 'Question'). Check the **Monthly FAQ** first — thorough pre-posting research is required."
+comment: "Your post was removed for a low-effort title (Rule 3). Resubmit with a descriptive title (e.g., 'Can I upgrade Gold to Platinum mid-year?' not 'Question'). Check the **Monthly FAQ** first -- thorough pre-posting research is required."
 ---
 type: submission
 title (regex, full-exact): '^[^a-z]*[A-Z][^a-z]*[A-Z][^a-z]*[A-Z][^a-z]{12,}$'
@@ -662,7 +663,7 @@ comment: |
     - Your question or discussion topic
     - Relevant details (approval date, credit score range, etc.)
 
-    Check the **Monthly FAQ** before posting — thorough research is required.
+    Check the **Monthly FAQ** before posting -- thorough research is required.
 ---
 type: submission
 title (regex):
@@ -671,7 +672,7 @@ title (regex):
     - '(?i)^(?:first|my\s+first|beginner|new\s+to)\s+(?:amex|card|credit)'
     - '(?i)^what\s+is\s+(?:the\s+)?(?:annual\s+fee|AF|SUB|pop[\-\s]?up)'
 action: filter
-action_reason: "Rule 3: Common FAQ question — redirect to Monthly FAQ"
+action_reason: "Rule 3: Common FAQ question -- redirect to Monthly FAQ"
 comment: "Your post may be a frequently asked question. Per Rule 3, check the **Monthly FAQ** thread first (pinned at top of r/amex). Thorough pre-posting research is required. If not answered there, repost with specific details."
 ---
 
@@ -696,6 +697,7 @@ action_reason: "Rule 4: Possible moderator complaint [{{match}}]"
 ---
     reports: 3
     action: remove
+    action_reason: "Auto-removed: 3+ reports"
     modmail_subject: "Auto-removed: 3+ Reports"
     modmail: |
         {{permalink}}
@@ -771,7 +773,7 @@ comment: |
     2. Ask to speak with the "Member Services" or "Retention" department
     3. Politely explain you are considering closing due to the annual fee
     4. They may offer statement credits, bonus points, or a fee waiver
-    5. You are not obligated to accept — you can ask for time to think about it
+    5. You are not obligated to accept -- you can ask for time to think about it
 
     Check r/amex for recent data points on retention offers for your specific card.
 
@@ -804,7 +806,7 @@ comment: |
 
     A Financial Review is when Amex requests documentation to verify your income and spending. **Do not panic.** Key things to know:
 
-    1. Respond promptly — provide the requested documents (tax returns, bank statements, etc.)
+    1. Respond promptly -- provide the requested documents (tax returns, bank statements, etc.)
     2. During the review, your cards may be restricted
     3. The review typically takes 2-6 weeks
     4. Being honest and cooperative is the best strategy
