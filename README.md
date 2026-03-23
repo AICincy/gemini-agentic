@@ -61,12 +61,12 @@ AutoModerator evaluates checks and performs outputs/actions when checks match. T
 
 ## 3) Section-by-section behavior
 
-## Section 1: Shadowbans
+### Section 1: Shadowbans
 
 - Implements username-targeted removal for designated accounts.
 - Uses placeholder `author: [INPUTNAMEHERE]` in template form and removal action.
 
-## Section 2: PII / Doxxing Protection
+### Section 2: PII / Doxxing Protection
 
 Defensive rules for sensitive data leakage and evasion:
 
@@ -86,39 +86,39 @@ Defensive rules for sensitive data leakage and evasion:
   - zero-width character detection
   - fullwidth/superscript/subscript/circled numeral detection
 
-## Section 3: Rule 1 (Referral Protocol)
+### Section 3: Rule 1 (Referral Protocol)
 
 - Enforces referral posting constraints and ban-level policy cues.
 - Removes and escalates violations with modmail guidance.
 
-## Section 4: Rule 2 (Illegal Activity / Links)
+### Section 4: Rule 2 (Illegal Activity / Links)
 
 - Blocks prohibited external-link and scam patterns.
 - Escalates high-risk language and action-relevant contexts.
 
-## Section 5: Account Quality
+### Section 5: Account Quality
 
 - Uses account-level indicators (e.g., account age/karma style checks where configured) to reduce low-quality abuse/spam ingress.
 
-## Section 6: Rule 5 (User Decorum)
+### Section 6: Rule 5 (User Decorum)
 
 - Detects abusive language/slurs/threat-like content classes.
 - Removes/filters and escalates to moderators for ban decisions where applicable.
 
-## Section 7: Rule 3 (Submission Quality)
+### Section 7: Rule 3 (Submission Quality)
 
 - Enforces posting quality standards (low-effort/FAQ-type patterns).
 - Directs users to research resources and clearer post structure.
 
-## Section 8: Rule 4 (Moderator Interaction)
+### Section 8: Rule 4 (Moderator Interaction)
 
 - Supports rules around moderator authority/interaction expectations.
 
-## Section 9: Report Handling
+### Section 9: Report Handling
 
 - Handles report-triggered workflows to route suspicious or high-signal items to moderators.
 
-## Section 10: Community Helpers
+### Section 10: Community Helpers
 
 - Non-enforcement helper automations that provide standard guidance on frequent topics (acronyms, pop-up jail, retention offers, transfer partners, financial review, etc.).
 
@@ -149,7 +149,7 @@ Defensive rules for sensitive data leakage and evasion:
 ## 6) Deployment procedure (production)
 
 1. Open old Reddit config page:
-   - `https://old.reddit.com/r/<subreddit>/wiki/config/automoderator`
+   - `https://old.reddit.com/r/amex/wiki/config/automoderator`
 2. Paste full contents of `amex_automod_remediated.yml`.
 3. Save with a clear revision reason (ASCII-safe text recommended).
 4. Monitor:
