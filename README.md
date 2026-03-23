@@ -1,4 +1,4 @@
-# r/amex AutoModerator Configuration
+# Amex-Automod-Wiki
 
 Production-ready [AutoModerator](https://www.reddit.com/wiki/automoderator/full-documentation) ruleset for the **r/amex** subreddit — covering PII protection, policy enforcement, spam control, and community automation.
 
@@ -35,7 +35,7 @@ Production-ready [AutoModerator](https://www.reddit.com/wiki/automoderator/full-
 
 ## Overview
 
-This repository maintains the AutoModerator configuration deployed on **r/amex**. The ruleset enforces five subreddit rules:
+The **Amex-Automod-Wiki** repository maintains the AutoModerator configuration deployed on **r/amex**. The ruleset enforces five subreddit rules:
 
 | Rule | Policy | Enforcement |
 |------|--------|-------------|
@@ -261,7 +261,7 @@ For full syntax documentation, see the [AutoModerator full documentation](https:
 
 ## Reference Materials
 
-This repository includes a consolidated reference of Reddit's AutoModerator documentation for offline use:
+Amex-Automod-Wiki includes a consolidated reference of Reddit's AutoModerator documentation for offline use:
 
 | File | Contents |
 |------|----------|
@@ -278,4 +278,4 @@ This repository includes a consolidated reference of Reddit's AutoModerator docu
 
 This project is licensed under the [MIT License](LICENSE).
 
-Copyright © 2026 [AICincy](https://github.com/AICincy)
+Copyright © 2026 [AICincy](https://github.com/AICincy/Amex-Automod-Wiki)
