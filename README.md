@@ -1,226 +1,290 @@
-# gemini-agentic AutoModerator Configuration
+# r/amex AutoModerator Configuration
 
-This repository contains a production AutoModerator configuration for **r/amex** and supporting reference material used to validate syntax and behavior decisions.
+Production-ready [AutoModerator](https://www.reddit.com/wiki/automoderator/full-documentation) ruleset for the **r/amex** subreddit — covering PII protection, policy enforcement, spam control, and community automation.
 
-Primary config file:
-
-- `./amex_automod_remediated.yml`
-
-Reference/source docs (snapshots):
-
-- `./Reddit 1.yml`
-- `./Reddit 2.txt`
-- `./Reddit 3.txt`
-- `./Reddit 4.txt`
-- `./Reddit 5.txt`
-- `./Reddit 6.txt`
+> **Version 4.1** · 816 lines · 65 YAML rules across 10 sections · MIT License
 
 ---
 
-## 1) What this configuration does
+## Table of Contents
 
-The AutoModerator file enforces subreddit policy with priority on:
-
-1. **PII / doxxing prevention**
-2. **Referral and fraud policy enforcement**
-3. **Illegal/scam/external-link moderation controls**
-4. **Submission quality controls**
-5. **Community helper automation** (auto-replies for common topics)
-
-The config is implemented as many YAML documents separated by `---`, where each document is one AutoModerator rule.
-
----
-
-## 2) High-level architecture
-
-The file is organized into ten sections (documented in header comments):
-
-1. Shadowbans
-2. PII / Doxxing Protection
-3. Rule 1 (Referrals)
-4. Rule 2 (Illegal/Links)
-5. Account Quality
-6. Rule 5 (Decorum)
-7. Rule 3 (Quality)
-8. Rule 4 (Moderator Interaction)
-9. Report Handling
-10. Community Helpers
-
-### Rule execution model
-
-AutoModerator evaluates checks and performs outputs/actions when checks match. This config uses:
-
-- `action: remove|filter|report|approve` depending on risk/severity
-- `priority` to influence ordering where needed
-- `modmail_subject` + `modmail` for moderator escalation context
-- `action_reason` (including `{{match}}`) for auditability in mod tooling
-- `type: submission|comment|any` where scope control is needed
-- `~check` negation for safe exclusions / false-positive control
+- [Overview](#overview)
+- [Repository Contents](#repository-contents)
+- [Architecture](#architecture)
+  - [Rule Sections](#rule-sections)
+  - [Execution Model](#execution-model)
+- [Feature Details](#feature-details)
+  - [PII & Doxxing Protection](#pii--doxxing-protection)
+  - [Policy Enforcement](#policy-enforcement)
+  - [Quality & Spam Controls](#quality--spam-controls)
+  - [Community Helpers](#community-helpers)
+- [Design Principles](#design-principles)
+- [Deployment](#deployment)
+  - [Prerequisites](#prerequisites)
+  - [Steps](#steps)
+  - [Validation](#validation)
+- [Moderator Guide](#moderator-guide)
+  - [Action Types](#action-types)
+  - [Operational Workflow](#operational-workflow)
+  - [Making Changes](#making-changes)
+- [YAML Syntax Reference](#yaml-syntax-reference)
+- [Reference Materials](#reference-materials)
+- [License](#license)
 
 ---
 
-## 3) Section-by-section behavior
+## Overview
 
-### Section 1: Shadowbans
+This repository maintains the AutoModerator configuration deployed on **r/amex**. The ruleset enforces five subreddit rules:
 
-- Implements username-targeted removal for designated accounts.
-- Uses placeholder `author: [INPUTNAMEHERE]` in template form and removal action.
+| Rule | Policy | Enforcement |
+|------|--------|-------------|
+| **Rule 1** | Referral Protocol | Designated threads only; permanent ban for violations |
+| **Rule 2** | Illegal Activity | All non-`americanexpress.com`/`amex.com` links blocked |
+| **Rule 3** | Submission Quality | Research required; low-effort posts redirected to Monthly FAQ |
+| **Rule 4** | Moderator Interaction | Mod decisions are final |
+| **Rule 5** | User Decorum | Respectful conduct required |
 
-### Section 2: PII / Doxxing Protection
-
-Defensive rules for sensitive data leakage and evasion:
-
-- Credit card detection:
-  - issuer-aware grouped patterns (Visa/MC/Amex/Discover/Diners/JCB)
-  - per-digit separated obfuscation detection
-  - contiguous 13–19 digit detection with targeted exclusions
-- SSN pattern detection with invalid-range exclusions
-- US phone number detection with exclusion filters
-- Email detection:
-  - standard `user@domain`
-  - bracketed obfuscation formats (`[at]`, `(dot)`, etc.)
-  - bare `AT/DOT` obfuscation format
-- Mailing address detection
-- Edited-content re-check (`is_edited: true`) to catch edit-after-post bypasses
-- Unicode evasion detection:
-  - zero-width character detection
-  - fullwidth/superscript/subscript/circled numeral detection
-
-### Section 3: Rule 1 (Referral Protocol)
-
-- Enforces referral posting constraints and ban-level policy cues.
-- Removes and escalates violations with modmail guidance.
-
-### Section 4: Rule 2 (Illegal Activity / Links)
-
-- Blocks prohibited external-link and scam patterns.
-- Escalates high-risk language and action-relevant contexts.
-
-### Section 5: Account Quality
-
-- Uses account-level indicators (e.g., account age/karma style checks where configured) to reduce low-quality abuse/spam ingress.
-
-### Section 6: Rule 5 (User Decorum)
-
-- Detects abusive language/slurs/threat-like content classes.
-- Removes/filters and escalates to moderators for ban decisions where applicable.
-
-### Section 7: Rule 3 (Submission Quality)
-
-- Enforces posting quality standards (low-effort/FAQ-type patterns).
-- Directs users to research resources and clearer post structure.
-
-### Section 8: Rule 4 (Moderator Interaction)
-
-- Supports rules around moderator authority/interaction expectations.
-
-### Section 9: Report Handling
-
-- Handles report-triggered workflows to route suspicious or high-signal items to moderators.
-
-### Section 10: Community Helpers
-
-- Non-enforcement helper automations that provide standard guidance on frequent topics (acronyms, pop-up jail, retention offers, transfer partners, financial review, etc.).
+Beyond rule enforcement, the config provides **PII/doxxing protection** (credit cards, SSNs, phone numbers, emails, addresses) and **community helper bots** that auto-reply with guidance on common topics.
 
 ---
 
-## 4) Why the configuration is implemented this way
+## Repository Contents
 
-- **Defense in depth:** Multiple pattern classes (grouped, contiguous, obfuscated, Unicode-evasive) close common bypass paths.
-- **Operational triage:** `remove` for clear violations, `filter` for review-needed ambiguity, modmail for high-priority escalation.
-- **False-positive reduction:** Exclusion clauses (`~body (regex)` and contextual guards) are used on broader detectors.
-- **Auditability:** `action_reason` and placeholders preserve traceability for moderator review.
-- **Policy traceability:** Rules map directly to subreddit policy categories in top comments.
-
----
-
-## 5) YAML and AutoModerator syntax requirements (critical)
-
-1. Rules are separated by `---` with no indentation.
-2. Use consistent indentation spaces (no tabs).
-3. Quote regex strings appropriately:
-   - single quotes are usually safer for regex literals
-   - double-quoted strings may be used intentionally for `\uXXXX` escaping
-4. Avoid unsupported literal special characters that can break save behavior in AutoMod editors.
-5. Keep keys unique within each YAML mapping (duplicate keys overwrite or invalidate intent).
+| File | Purpose |
+|------|---------|
+| `amex_automod_remediated.yml` | **Production AutoMod config** — deploy this file |
+| `Reddit 1.yml` | Reference: AutoModerator library of common rules |
+| `Reddit 2.txt` | Reference: Common AutoMod configuration mistakes |
+| `Reddit 3.txt` | Reference: Things AutoModerator can and can't do |
+| `Reddit 4.txt` | Reference: AutoMod inputs, modifiers, and outputs |
+| `Reddit 5.txt` | Reference: AutoModerator limitations |
+| `Reddit 6.txt` | Reference: AutoMod error messages and debugging |
 
 ---
 
-## 6) Deployment procedure (production)
+## Architecture
 
-1. Open old Reddit config page:
-   - `https://old.reddit.com/r/amex/wiki/config/automoderator`
-2. Paste full contents of `amex_automod_remediated.yml`.
-3. Save with a clear revision reason (ASCII-safe text recommended).
-4. Monitor:
-   - modqueue volume
-   - modmail alerts
-   - false-positive rate from filtered content
+### Rule Sections
 
-For staged rollout, deploy during active moderator coverage windows.
+The config is organized into **10 sections**, each separated by `---` document dividers and labeled with header comments:
+
+| # | Section | Purpose |
+|---|---------|---------|
+| 1 | **Shadowbans** | Username-targeted silent removal |
+| 2 | **PII / Doxxing Protection** | Sensitive data detection and removal |
+| 3 | **Rule 1 — Referral Protocol** | Referral posting enforcement |
+| 4 | **Rule 2 — Illegal Activity & Links** | External link and scam blocking |
+| 5 | **Account Quality Gates** | Account age/karma filtering |
+| 6 | **Rule 5 — User Decorum** | Abusive language and threat detection |
+| 7 | **Rule 3 — Submission Quality** | Low-effort post filtering |
+| 8 | **Rule 4 — Moderator Interaction** | Mod authority enforcement |
+| 9 | **Report Handling** | Report-triggered moderation workflows |
+| 10 | **Community Helpers** | Auto-replies for common topics |
+
+### Execution Model
+
+Each rule is a YAML document that declares checks and actions. The config uses:
+
+| Key | Purpose |
+|-----|---------|
+| `action`: `remove`, `filter`, `report` | Severity-appropriate response |
+| `priority` | Influences rule evaluation order |
+| `modmail_subject` + `modmail` | Escalation context for moderators |
+| `action_reason` with `{{match}}` | Audit trail in mod tooling |
+| `type`: `submission`, `comment`, `any` | Scope control |
+| `~check` negation | False-positive exclusions |
+| `is_edited: true` | Catches edit-after-post bypass attempts |
 
 ---
 
-## 7) Validation workflow before every production change
+## Feature Details
 
-Because this repository has no app/test framework, validate with Python checks:
+### PII & Doxxing Protection
+
+The most comprehensive section, providing layered defense against sensitive data exposure:
+
+**Credit card detection** — covers all six major card networks:
+- Issuer-aware grouped patterns (Visa, Mastercard, Amex, Discover, Diners Club, JCB)
+- Per-digit separation defense (e.g., `4-1-2-3-...`)
+- Contiguous 13–19 digit detection with targeted exclusions
+- Obfuscation evasion via flexible separators (dots, dashes, pipes, markdown formatting)
+
+**Other PII patterns:**
+- **SSN** — `XXX-XX-XXXX` format with invalid-range exclusions (000, 666, 9xx)
+- **Phone numbers** — Multiple US formats; excludes 555 numbers and crisis hotlines
+- **Email addresses** — Standard, bracketed obfuscation (`[at]`/`[dot]`), and ALL-CAPS `AT`/`DOT` formats
+- **Mailing addresses** — Street address pattern detection
+
+**Anti-evasion measures:**
+- Edited-content re-scan (`is_edited: true`) to catch post-then-edit bypass
+- Zero-width Unicode character detection (`\u200B`, `\u200C`, `\u200D`, `\uFEFF`, etc.)
+- Fullwidth, superscript, subscript, and circled numeral detection
+
+### Policy Enforcement
+
+- **Referral Protocol (Rule 1):** Detects referral links/language outside designated threads. Removes violations and sends modmail with ban-level escalation guidance.
+- **Illegal Activity & Links (Rule 2):** Blocks all external links except `americanexpress.com` and `amex.com`. Detects scam patterns and escalates high-risk language.
+- **User Decorum (Rule 5):** Detects slurs, abusive language, and threats. Removes or filters content and escalates to moderators for ban decisions.
+- **Moderator Interaction (Rule 4):** Enforces respectful mod interaction expectations.
+
+### Quality & Spam Controls
+
+- **Account Quality Gates:** Filters based on account age and karma to reduce low-quality abuse and spam.
+- **Submission Quality (Rule 3):** Detects low-effort and FAQ-pattern posts. Directs users to research resources.
+- **Report Handling:** Routes user-reported content to moderators for review.
+
+### Community Helpers
+
+Non-enforcement automations that auto-reply with standardized guidance:
+- Credit card acronym explanations
+- Pop-up jail information
+- Retention offer guidance
+- Transfer partner details
+- Financial review process information
+
+---
+
+## Design Principles
+
+| Principle | Implementation |
+|-----------|----------------|
+| **Defense in depth** | Multiple pattern classes (grouped, contiguous, obfuscated, Unicode) close common bypass paths |
+| **Operational triage** | `remove` for clear violations, `filter` for ambiguous cases, `modmail` for high-priority escalation |
+| **False-positive control** | Exclusion clauses (`~body (regex)` and contextual guards) on broader detectors |
+| **Auditability** | `action_reason` with `{{match}}` preserves traceability for every moderator action |
+| **Policy traceability** | Rules map directly to subreddit rule numbers via section header comments |
+
+---
+
+## Deployment
+
+### Prerequisites
+
+- Moderator access to **r/amex**
+- Access to the [old Reddit](https://old.reddit.com) interface
+- Python 3.x with `pyyaml` (for validation only)
+
+### Steps
+
+1. **Validate** the config (see [Validation](#validation) below).
+2. Navigate to [`old.reddit.com/r/amex/wiki/config/automoderator`](https://old.reddit.com/r/amex/wiki/config/automoderator).
+3. Paste the full contents of `amex_automod_remediated.yml`.
+4. Save with a clear, ASCII-safe revision reason.
+5. **Monitor** after deployment:
+   - Modqueue volume
+   - Modmail alerts
+   - False-positive rate from filtered content
+
+> **Tip:** Deploy during active moderator coverage windows for staged rollout.
+
+### Validation
+
+Run this before every production change to verify YAML syntax, regex compilation, and structural integrity:
 
 ```bash
-cd /path/to/gemini-agentic
 python - <<'PY'
 import yaml, re
 from pathlib import Path
+
 text = Path('amex_automod_remediated.yml').read_text(encoding='utf-8')
 docs = list(yaml.safe_load_all(text))
-print('docs_total', len(docs))
-print('rule_docs', sum(isinstance(d, dict) for d in docs))
-print('empty_docs', sum(d is None for d in docs))
-print('regex_keys', sum(1 for d in docs if isinstance(d, dict) for k in d if '(regex' in k))
-print('has_literal_zero_width', any(c in text for c in ['\u200b','\u200c','\u200d','\u200e','\u200f','\u2060','\ufeff']))
-fullwidth_digits = ''.join(chr(cp) for cp in range(0xFF10, 0xFF1A))
-print('has_literal_fullwidth_digits', any(c in text for c in fullwidth_digits))
+
+print(f"Total documents:  {len(docs)}")
+print(f"Active rules:     {sum(isinstance(d, dict) for d in docs)}")
+print(f"Empty documents:  {sum(d is None for d in docs)}")
+
+# Check for problematic literal Unicode characters
+zw_chars = ['\u200b', '\u200c', '\u200d', '\u200e', '\u200f', '\u2060', '\ufeff']
+fw_digits = [chr(cp) for cp in range(0xFF10, 0xFF1A)]
+print(f"Literal zero-width chars: {any(c in text for c in zw_chars)}")
+print(f"Literal fullwidth digits: {any(c in text for c in fw_digits)}")
+
+# Validate all regex patterns compile
+errors = 0
 for i, d in enumerate(docs, 1):
     if not isinstance(d, dict):
         continue
     for k, v in d.items():
         if '(regex' in k:
-            pats = v if isinstance(v, list) else [v]
-            for p in pats:
+            for p in (v if isinstance(v, list) else [v]):
                 if isinstance(p, str):
-                    re.compile(p)
-print('regex_compile_ok')
+                    try:
+                        re.compile(p)
+                    except re.error as e:
+                        print(f"  REGEX ERROR in doc {i}, key '{k}': {e}")
+                        errors += 1
+print(f"Regex validation: {'PASS' if errors == 0 else f'FAIL ({errors} errors)'}")
 PY
 ```
 
-Also run a duplicate-key YAML loader check when making structural edits.
-
 ---
 
-## 8) Operational guidance for moderators
+## Moderator Guide
 
-- Treat **remove** actions as policy-enforced and review `action_reason`.
-- Treat **filter** actions as triage queue candidates; re-approve when false positives are confirmed.
-- Use modmail alerts for incident response (PII/scam/high-risk signals).
-- For repeat abuse patterns, promote detections from `filter` to `remove` in controlled increments.
+### Action Types
 
----
+| Action | Meaning | What to Do |
+|--------|---------|------------|
+| `remove` | Clear policy violation — content removed automatically | Review `action_reason` in mod log for context |
+| `filter` | Ambiguous — sent to modqueue for review | Re-approve false positives; escalate true violations |
+| `report` | Flagged for attention | Review and take manual action as needed |
+| modmail alert | High-priority signal (PII, scam, etc.) | Treat as incident response |
 
-## 9) Change-management recommendations
+### Operational Workflow
 
-- Keep edits scoped to one section at a time.
-- Validate after each edit set.
-- Record reason for change and expected effect in comments near modified rules.
-- Prefer additive safeguards over broad pattern relaxation.
+1. **Monitor modqueue** for `filter`-action items requiring human review.
+2. **Check modmail** for escalation alerts from PII/scam/high-risk detections.
+3. **Re-approve** content that was incorrectly filtered (false positives).
+4. **Promote** repeat abuse patterns from `filter` to `remove` in controlled increments.
+
+### Making Changes
+
+- Scope edits to **one section at a time**.
+- **Validate** after every edit (see [Validation](#validation)).
+- Document the reason and expected effect in comments near modified rules.
+- Prefer **additive safeguards** over broad pattern relaxation.
 - Avoid unrelated refactors during incident-driven fixes.
 
 ---
 
-## 10) Repository intent and limitations
+## YAML Syntax Reference
 
-- This repository is configuration-centric (no runtime service or packaged application).
-- Production correctness depends on:
-  - YAML validity
-  - AutoModerator-supported syntax
-  - Moderator operational response
+Key syntax rules for AutoModerator YAML:
 
-If unsure about syntax behavior, verify against the AutoModerator documentation snapshots in this repository before deploying.
+1. Rules are separated by `---` on its own line with no indentation.
+2. Use **spaces** for indentation (never tabs).
+3. **Single-quote** regex strings for literal patterns.
+4. Use **double-quoted** strings with `\uXXXX` when Unicode escaping is needed.
+5. Avoid literal special characters that can break Reddit's AutoMod editor.
+6. Keep keys **unique** within each YAML document (duplicates silently overwrite).
+
+For full syntax documentation, see the [AutoModerator full documentation](https://www.reddit.com/wiki/automoderator/full-documentation) and the reference files in this repository.
+
+---
+
+## Reference Materials
+
+This repository includes snapshots of Reddit's AutoModerator documentation for offline reference:
+
+| File | Contents |
+|------|----------|
+| `Reddit 1.yml` | Library of common AutoMod rules and templates |
+| `Reddit 2.txt` | Common configuration mistakes and how to avoid them |
+| `Reddit 3.txt` | Comprehensive list of AutoMod capabilities and limitations |
+| `Reddit 4.txt` | AutoMod inputs, modifiers, and output actions |
+| `Reddit 5.txt` | Detailed AutoModerator limitations |
+| `Reddit 6.txt` | Error messages reference and debugging guide |
+
+**Official documentation:**
+- [AutoModerator Full Documentation](https://www.reddit.com/wiki/automoderator/full-documentation)
+- [Reddit Help: AutoModerator](https://support.reddithelp.com/hc/en-us/articles/15484574206484)
+- [Contributor Quality Score (CQS)](https://support.reddithelp.com/hc/en-us/articles/19023371170196)
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+Copyright © 2026 [AICincy](https://github.com/AICincy)
