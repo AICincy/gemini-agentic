@@ -294,20 +294,27 @@ By default, flair checks are done as full-exact which means that the whole text 
 
 ### Examples
 
-:
-
+Matching special characters in title using regex:
 
 ```yaml
 ---
 title (regex): ['\U0001F600', '\u2705']
----
-    or
----
-title (regex): ['[\u2705\U0001F600]' --- Outputting special characters To output a special character in a comment or message, paste the character into https://unicode-table.com/ and copy the HTML code. For example, for this emoji, you can use comment: "Hi &#128522;"
 ```
 
+Or using a character class:
 
-. To include a special character in flair text, you need to use the custom emoji code from mod tools like :cake: - set_flair: "Verified :cake:". Things AutoModerator Can't Do There are things that AutoModerator can't do like: looking at votes on posts/comments, delaying a check/action (e.g., acting on a flair that's added/changed after posting, or removing a matched post after one day), looking at parent comments, looking at other comments in a post (or lack thereof), only allowing specific types of posts on specific days, etc.
+```yaml
+---
+title (regex): ['[\u2705\U0001F600]']
+```
+
+**Outputting special characters:** To output a special character in a comment or message, paste the character into https://unicode-table.com/ and copy the HTML code. For example, for this emoji, you can use `comment: "Hi &#128522;"`.
+
+To include a special character in flair text, you need to use the custom emoji code from mod tools like `:cake:` — e.g., `set_flair: "Verified :cake:"`.
+
+### Things AutoModerator Can't Do
+
+There are things that AutoModerator can't do, such as: looking at votes on posts/comments, delaying a check/action (e.g., acting on a flair that's added/changed after posting, or removing a matched post after one day), looking at parent comments, looking at other comments in a post (or lack thereof), only allowing specific types of posts on specific days, etc.
 
 ### Regex Mistakes
 
@@ -843,7 +850,7 @@ comment: |
 ```
 
 
---- Profanity Filter This filters variants of common vulgarity including semi-censored variants and some common Spanish profanity. This rule can be copy-pasted directly to your AutoModerator configuration without modification, but some fine-tuning may be required.
+**Profanity Filter:** This filters variants of common vulgarity including semi-censored variants and some common Spanish profanity. This rule can be copy-pasted directly to your AutoModerator configuration without modification, but some fine-tuning may be required.
 
 
 ```yaml
@@ -851,8 +858,11 @@ comment: |
 title+body (regex): ['((bul+|dip|horse|jack).?)?sh(\\?\*|[ai]|(?!(eets?|iites?)\b)[ei]{2,})(\\?\*|t)e?(bag|dick|head|load|lord|post|stain|ter|ting|ty)?s?', '((dumb|jack|smart|wise).?)?a(rse|ss)(.?(clown|fuck|hat|hole|munch|sex|tard|tastic|wipe))?(e?s)?', '(?!(?-i:Cockburns?\b))cock(?!amamie|apoo|atiel|atoo|ed\b|er\b|erels?\b|eyed|iness|les|ney|pit|rell|roach|sure|tail|ups?\b|y\b)\w[\w-]*', '(?#ES)(cabr[oó]n(e?s)?|chinga\W?(te)?|g[uü]ey|mierda|no mames|pendejos?|pinche|put[ao]s?)', '(?<!\b(moby|tom,) )(?!(?-i:Dick [A-Z][a-z]+\b))dick(?!\W?(and jane|cavett|cheney|dastardly|grayson|s?\W? sporting good|tracy))s?', '(cock|dick|penis|prick)\W?(bag|head|hole|ish|less|suck|wad|weed|wheel)\w*', '(f(?!g\b|gts\b)|ph)[\x40a]?h?g(?!\W(and a pint|ash|break|butt|end|packet|paper|smok\w*)s?\b)g?h?([0aeiou]?tt?)?(ed|in[\Wg]?|r?y)?s?', '(m[oua]th(a|er).?)?f(?!uch|uku)(\\?\*|u|oo)+(\\?\*|[ckq])+\w*', '[ck]um(?!.laude)(.?shot)?(m?ing|s)?', 'b(\\?\*|i)(\\?\*|[ao])?(\\?\*|t)(\\?\*|c)(\\?\*|h)(e[ds]|ing|y)?', 'c+u+n+t+([sy]|ing)?', 'cock(?!-ups?\b|\W(a\Whoop|a\Wsnook|and\Wbull|eyed|in\Wthe\Whenhouse|of\Wthe\W(rock|roost|walk))\b)s?', 'd[o0]+u[cs]he?\W?(bag|n[0o]zzle|y)s?', 'piss(ed(?! off)(?<!\bi(\sa|\W?)m pissed)|er?s|ing)?', 'pricks?', 'tit(t(ie|y))?s?']
 action: filter
 action_reason: "Profanity [{{match}}]"
----
-    After a sufficient period of testing, you may consider replacing the latter two lines with the following:
+```
+
+After a sufficient period of testing, you may consider replacing the latter two lines with the following:
+
+```yaml
 ---
 action: remove
 action_reason: "Profanity [{{match}}]"
@@ -1039,34 +1049,47 @@ action_reason: "New user"
 author: comment_karma: "< -50"
 action: remove
 action_reason: "Low karma user"
----
-    User Bot Ban List Often, it may be advantageous to "bot ban" a troll or spammer rather than ban them. An actual ban simply tells them that it's time to create a new account. With a bot ban, some users won't realize they've been banned. Note that there are two formats, simple and extended. The extended format allows you to keep things clearer and add comments, particularly if you have a lot of users in the list. Replace the list between the brackets with your own list of users to bot ban. Simple format:
----
-author: name: [username1, username2, username3]
-action: remove
-action_reason: "User is banned"
----
-    Extended format:
----
-author: name:
-# comment for a section of users - username1 - username2
-# comment for specific user
-# comment for a section of users - username3
 ```
 
+**User Bot Ban List:** Often, it may be advantageous to "bot ban" a troll or spammer rather than ban them. An actual ban simply tells them that it's time to create a new account. With a bot ban, some users won't realize they've been banned. Note that there are two formats, simple and extended. The extended format allows you to keep things clearer and add comments, particularly if you have a lot of users in the list. Replace the list between the brackets with your own list of users to bot ban.
 
+Simple format:
 
 ```yaml
+---
+author:
+    name: [username1, username2, username3]
 action: remove
 action_reason: "User is banned"
+```
+
+Extended format:
+
+```yaml
 ---
-    User Whitelist These rules will approve content from specific users. You can use either or both rules. The first rule auto-approves content at the time a user submits or edits it. This is the only way to auto-approve content by a user with a site-wide shadowban. This will also auto-approve some content that contains a site-wide spammed domain (not most submissions using a URL shortener, though). Note that AutoModerator will never approve content by a shadowbanned user unless the user is specifically mentioned by name or you use a regex check (e.g., name (regex): ['.+']). You also have to uncheck the exclude posts by site-wide banned users from modqueue/unmoderated subreddit setting or AutoModerator will never see the user's content to approve it. The second rule will auto-approve content by a user when it is reported by another user (or a moderator). Replace the lists between the brackets with your own list of users to approve.
+author:
+    name:
+        # comment for a section of users
+        - username1
+        - username2
+        # comment for specific user
+        # comment for a section of users
+        - username3
+action: remove
+action_reason: "User is banned"
+```
+
+**User Whitelist:** These rules will approve content from specific users. You can use either or both rules. The first rule auto-approves content at the time a user submits or edits it. This is the only way to auto-approve content by a user with a site-wide shadowban. This will also auto-approve some content that contains a site-wide spammed domain (not most submissions using a URL shortener, though). Note that AutoModerator will never approve content by a shadowbanned user unless the user is specifically mentioned by name or you use a regex check (e.g., `name (regex): ['.+']`). You also have to uncheck the "exclude posts by site-wide banned users from modqueue/unmoderated" subreddit setting or AutoModerator will never see the user's content to approve it. The second rule will auto-approve content by a user when it is reported by another user (or a moderator). Replace the lists between the brackets with your own list of users to approve.
+
+```yaml
 ---
-author: name: [username1, username2, username3]
+author:
+    name: [username1, username2, username3]
 action: approve
 action_reason: "Whitelisted user"
 ---
-author: name: [username1, username2, username3]
+author:
+    name: [username1, username2, username3]
 reports: 1
 action: approve
 action_reason: "Approve reported content from whitelisted user"
@@ -1079,7 +1102,7 @@ action_reason: "Approve reported content from whitelisted user"
 
 Alert the subreddit moderators when certain things happen.
 
-when certain things happen. Reported Items Notify the moderators if something receives a certain number of reports. It is recommended to set the number of required reports to 2 or 3 for smaller subreddits and 3 to 5 for larger ones. This rule can be copy-pasted directly to your AutoModerator configuration with or without modification.
+**Reported Items:** Notify the moderators if something receives a certain number of reports. It is recommended to set the number of required reports to 2 or 3 for smaller subreddits and 3 to 5 for larger ones. This rule can be copy-pasted directly to your AutoModerator configuration with or without modification.
 
 
 ```yaml
@@ -1088,10 +1111,10 @@ reports: 2
 action: filter
 action_reason: "Multiple reports"
 modmail: The above {{kind}} by /u/{{author}} has received multiple reports.
+    Please investigate.
 ```
 
-
-Please investigate. --- Topic Alert Alert the moderators if someone posts about a certain topic. Replace the list between the brackets with your own list of keywords. Replace topic in the modmail message accordingly.
+**Topic Alert:** Alert the moderators if someone posts about a certain topic. Replace the list between the brackets with your own list of keywords. Replace "topic" in the modmail message accordingly.
 
 
 ```yaml
@@ -1101,7 +1124,7 @@ modmail: The above submission by /u/{{author}}, with title "{{title}}" may be ab
 ```
 
 
---- Post Alert Notify the moderators when a submission is made. This may be useful for small or new subreddits with less activity. This rule can be copy/pasted directly to your AutoModerator configuration without modification.
+**Post Alert:** Notify the moderators when a submission is made. This may be useful for small or new subreddits with less activity. This rule can be copy/pasted directly to your AutoModerator configuration without modification.
 
 
 ```yaml
@@ -1112,7 +1135,7 @@ modmail: |
 ```
 
 
---- Meta Drama Alert Alert the moderators that content on their subreddit has been linked to from elsewhere on Reddit. This rule takes advantage of the existence of /u/TotesMessenger, which detects links to other subreddits and comments to alert users that their content has been linked to from elsewhere on reddit. This rule requires that /u/TotesMessenger not be banned (or bot banned) from your subreddit. If you don't want to remove the /u/TotesMessenger comment, remove the top-level action and action_reason lines.
+**Meta Drama Alert:** Alert the moderators that content on their subreddit has been linked to from elsewhere on Reddit. This rule takes advantage of the existence of /u/TotesMessenger, which detects links to other subreddits and comments to alert users that their content has been linked to from elsewhere on reddit. This rule requires that /u/TotesMessenger not be banned (or bot banned) from your subreddit. If you don't want to remove the /u/TotesMessenger comment, remove the top-level action and action_reason lines.
 
 
 ```yaml
@@ -1126,9 +1149,7 @@ modmail: |
     The following thread in /r/{{subreddit}} has been linked in {{match-body-2}}: **Original:** [{{title}}]({{permalink}}) **Meta post:** [{{match-body-3}}]({{match-body-4}})
 ```
 
-
---- If you would prefer to be alerted via the moderation queue, use this rule instead:
-
+If you would prefer to be alerted via the moderation queue, use this rule instead:
 
 ```yaml
 ---
@@ -1136,10 +1157,14 @@ author: [TotesMessenger]
 body (regex, includes): ['\[(/r/\w+)\] \[(.+)\]\((https?://\w+\.reddit\.com/\S+)\)']
 action: remove
 action_reason: "Remove {{author}} comment after reporting thread, {{author}} is our friend [{{match-2}}]"
-parent_submission: action: report
-action_reason: "Submission linked from elsewhere [{{match-body-2}}]"
----
-    Report Suspicious Content NSFW and NSFL
+parent_submission:
+    action: report
+    action_reason: "Submission linked from elsewhere [{{match-body-2}}]"
+```
+
+**Report Suspicious Content (NSFW and NSFL):**
+
+```yaml
 ---
 title+body (regex): ['not.safe.for.(work|life)', 'nsf[wl]']
 set_nsfw: true
@@ -1229,8 +1254,7 @@ modmail: |
     If the user is doxxing, [ban them](/r/{{subreddit}}/about/banned) and [report them to the Reddit admins](http://www.reddit.com/message/compose?to=%2Fr%2Freddit.com&subject=Doxxing%20Report:%20%2Fu%2F{{author}}) immediately.
 ```
 
-
---- Disguised Links Detect and filter content where Reddit markup is used to disguise one link as another. This rule can be copy-pasted into your AutoModerator config without modification. The regex used in body+title must be the first regex in the line or it will not work. The regex is written for AutoModerator and will require backreference numbering changes to work elsewhere.
+**Disguised Links:** Detect and filter content where Reddit markup is used to disguise one link as another. This rule can be copy-pasted into your AutoModerator config without modification. The regex used in `body+title` must be the first regex in the line or it will not work. The regex is written for AutoModerator and will require backreference numbering changes to work elsewhere.
 
 
 ```yaml
@@ -1238,8 +1262,11 @@ modmail: |
 body+title (regex, includes): ['\[\s*(?:https?://)?(([\w-]{1,64}\.)+[a-z][\w-]{1,63}(?=[\s#&/?\]]))[^\]]*\]\x28\s*https?://(?!((en|home|np|www)\.)?\2[\s#&\x29/?]|[\w.-]+\.gov/|www\.google\.com/url\?\S*\2)[^\x29]*\x29']
 action: filter
 action_reason: "Possible disguised link, please review [{{match}}]"
----
-    Username Mentions Detect and remove comments containing username mention "pings". This rule can be copy-pasted into your AutoModerator config without modification. Reddit only sends a notification for comments containing 3 or fewer usernames so the ~body line exempts comments with more than 3 unique usernames. The regex used in ~body must be the first regex in the line or it will not work.
+```
+
+**Username Mentions:** Detect and remove comments containing username mention "pings". This rule can be copy-pasted into your AutoModerator config without modification. Reddit only sends a notification for comments containing 3 or fewer usernames so the `~body` line exempts comments with more than 3 unique usernames. The regex used in `~body` must be the first regex in the line or it will not work.
+
+```yaml
 ---
 type: comment
 body (regex, includes): ['(?<!\bhttps://\w{3}\.reddit\.com/)\bu/([\w-]{3,20})']
@@ -1253,34 +1280,46 @@ action_reason: "Remove username mention [{{match-2}}]"
 
 ### Flair
 
-These rules are related to flair. Set Default Flair for New Users Detects users with no flair and assigns a default flair. Replace user text is here with your desired text for the flair and replace userclassishere with the name of your default flair class. Both items stay within quotes.
+These rules are related to flair.
+
+**Set Default Flair for New Users:** Detects users with no flair and assigns a default flair. Replace "user text is here" with your desired text for the flair and replace "userclassishere" with the name of your default flair class. Both items stay within quotes.
 
 
 ```yaml
 ---
-author: ~flair_css_class (regex): ['.+']
+author:
+    ~flair_css_class (regex): ['.+']
 set_flair: ["user text is here", "userclassishere"]
+```
+
+**Flair Ban:** If a user keeps setting inappropriate flair, use this rule to "flair ban" them. Replace the list between the brackets in the "name" line with your list of users to flair-ban. Note: this rule will clear their flair every time they participate in the subreddit. It will not prevent them from changing their flair again afterwards (Reddit does not provide any way to do that). This only makes it annoying and time-consuming for the user to maintain an inappropriate flair. (Originally, this was also possible with an empty css_class in the second field of set_flair, but that doesn't work anymore.)
+
+```yaml
 ---
-    Flair Ban If a user keeps setting inappropriate flair, use this rule to "flair ban" them. Replace the list between the brackets in the "name" line with your list of users to flair-ban. Note: this rule will clear their flair every time they participate in the subreddit. It will not prevent them from changing their flair again afterwards (Reddit does not provide any way to do that). This only makes it annoying and time-consuming for the user to maintain an inappropriate flair. (Originally, this was also possible with an empty css_class in the second field of set_flair, but that doesn't work anymore.)
----
-author: name: [username1, username2, username3]
+author:
+    name: [username1, username2, username3]
 flair_text (regex): ['.+']
 set_flair: ["", "_"]
 overwrite_flair: true
----
-    Domain-based Link Flair Set automatic link flair on certain domains. It is highly recommended that the flair class used not appear as a link flair template, so that users cannot use it to mislead other redditors. Replace link text is here with your desired text for the flair and replace linkclassishere with the name of your default flair class. Both items stay within quotes. Replace the list within brackets with your own list of domains to receive automatic link flair.
+```
+
+**Domain-based Link Flair:** Set automatic link flair on certain domains. It is highly recommended that the flair class used not appear as a link flair template, so that users cannot use it to mislead other redditors. Replace "link text is here" with your desired text for the flair and replace "linkclassishere" with the name of your default flair class. Both items stay within quotes. Replace the list within brackets with your own list of domains to receive automatic link flair.
+
+```yaml
 ---
 domain: [site1.com, site2.com, site3.com]
 set_flair: ["link text is here", "linkclassishere"]
----
-    Keyword-based Link Flair Assign link flair based on keywords in post title. Replace link text is here with your desired text for the flair and replace linkclassishere with the name of your default flair class. Both items stay within quotes. Replace the list within brackets with your own list of keywords to receive automatic link flair.
+```
+
+**Keyword-based Link Flair:** Assign link flair based on keywords in post title. Replace "link text is here" with your desired text for the flair and replace "linkclassishere" with the name of your default flair class. Both items stay within quotes. Replace the list within brackets with your own list of keywords to receive automatic link flair.
+
+```yaml
 ---
 title: [keyword1, keyword2, keyword3]
 set_flair: ["link text is here", "linkclassishere"]
----
-    Default Link Flair Set a default link flair on all link submissions. The use of
-priority: -1 ensures that this rule is evaluated last (after any other rule that might assign a different link flair).
 ```
+
+**Default Link Flair:** Set a default link flair on all link submissions. The use of `priority: -1` ensures that this rule is evaluated last (after any other rule that might assign a different link flair).
 
 
 Replace link text is here with your desired text for the flair and replace linkclassishere with the name of your default flair class. Both items stay within quotes.
