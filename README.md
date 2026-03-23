@@ -177,7 +177,8 @@ print('rule_docs', sum(isinstance(d, dict) for d in docs))
 print('empty_docs', sum(d is None for d in docs))
 print('regex_keys', sum(1 for d in docs if isinstance(d, dict) for k in d if '(regex' in k))
 print('has_literal_zero_width', any(c in text for c in ['\u200b','\u200c','\u200d','\u200e','\u200f','\u2060','\ufeff']))
-print('has_literal_fullwidth_digits', any(c in text for c in '０１２３４５６７８９'))
+fullwidth_digits = ''.join(chr(cp) for cp in range(0xFF10, 0xFF1A))
+print('has_literal_fullwidth_digits', any(c in text for c in fullwidth_digits))
 for i, d in enumerate(docs, 1):
     if not isinstance(d, dict):
         continue
