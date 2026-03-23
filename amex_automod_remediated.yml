@@ -846,7 +846,7 @@ comment: |
 ---
 # !retention — annual fee retention offer tips
 type: any
-body (regex): '(?i)!retention|\b(?:annual\s+fee|AF)\s+(?:retention|retent|waiv|credit|offer)\b|\bretention\s+(?:offer|call|department)\b'
+body (regex): '(?i)!retention\b|\b(?:annual\s+fee|AF)\s+(?:retention|retent|waiv|credit|offer)\b|\bretention\s+(?:offer|call|department)\b'
 comment: |
     It looks like you may be asking about annual fee retention offers.
 
