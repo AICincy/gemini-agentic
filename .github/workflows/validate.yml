@@ -1,0 +1,107 @@
+name: AutoMod Config Validation
+
+on:
+  push:
+    branches: [main]
+    paths: ['amex_automod_remediated.yml']
+  pull_request:
+    branches: [main]
+    paths: ['amex_automod_remediated.yml']
+
+jobs:
+  validate:
+    name: Validate AutoMod YAML
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Run AutoMod validation
+        run: |
+          python - <<'PY'
+          import yaml, re, sys
+          from pathlib import Path
+
+          path = Path('amex_automod_remediated.yml')
+          text = path.read_text(encoding='utf-8')
+
+          # --- 1. YAML parse ---
+          try:
+              docs = list(yaml.safe_load_all(text))
+          except yaml.YAMLError as e:
+              print(f'YAML PARSE ERROR: {e}')
+              sys.exit(1)
+
+          active = [d for d in docs if isinstance(d, dict)]
+          print(f'Documents total:  {len(docs)}')
+          print(f'Active rules:     {len(active)}')
+          print(f'Empty documents:  {sum(d is None for d in docs)}')
+
+          # --- 2. Literal Unicode safety checks ---
+          zw_chars  = ['\u200b','\u200c','\u200d','\u200e','\u200f','\u2060','\ufeff']
+          fw_digits = [chr(cp) for cp in range(0xFF10, 0xFF1A)]
+          if any(c in text for c in zw_chars):
+              print('FAIL: Literal zero-width character found in YAML.')
+              sys.exit(1)
+          if any(c in text for c in fw_digits):
+              print('FAIL: Literal fullwidth digit found in YAML.')
+              sys.exit(1)
+          print('Unicode safety:   PASS')
+
+          # --- 3. Em dash check (non-comment lines only) ---
+          bad_em = [i+1 for i, ln in enumerate(text.splitlines())
+                    if '\u2014' in ln and not ln.lstrip().startswith('#')]
+          if bad_em:
+              print(f'FAIL: Em dash in non-comment value at lines: {bad_em}')
+              sys.exit(1)
+          print('Em dash check:    PASS')
+
+          # --- 4. Regex compilation ---
+          errors = 0
+          for i, d in enumerate(docs, 1):
+              if not isinstance(d, dict):
+                  continue
+              for k, v in d.items():
+                  if '(regex' not in k:
+                      continue
+                  for p in (v if isinstance(v, list) else [v]):
+                      if isinstance(p, str):
+                          try:
+                              re.compile(p)
+                          except re.error as e:
+                              print(f'REGEX ERROR doc {i}, key {k!r}: {e}')
+                              print(f'  Pattern: {p}')
+                              errors += 1
+          if errors:
+              print(f'Regex validation: FAIL ({errors} error(s))')
+              sys.exit(1)
+          print('Regex validation: PASS')
+
+          # --- 5. Required fields on action rules ---
+          warn = 0
+          for i, d in enumerate(docs, 1):
+              if not isinstance(d, dict):
+                  continue
+              if 'action' in d and d['action'] in ('remove', 'filter', 'spam'):
+                  if 'action_reason' not in d:
+                      print(f'WARN doc {i}: action={d["action"]} has no action_reason')
+                      warn += 1
+          if warn:
+              print(f'Field warnings:   {warn} (non-fatal)')
+          else:
+              print('Required fields:  PASS')
+
+          print()
+          print('All checks passed. Config is ready to deploy.')
+          PY

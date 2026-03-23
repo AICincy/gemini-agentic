@@ -2,8 +2,8 @@
 
 # ============================================================================
 # Amex-Automod-Wiki — r/Amex AutoModerator Configuration
-# Version: 4.1 (Prison-level hardening + Rule alignment + Unicode evasion defense)
-# Last updated: 2026-03-21
+# Version: 5.1 (Production hardening: tightened passive triggers, reports:2 referral enforcement)
+# Last updated: 2026-03-23
 #
 # r/amex Rules enforced:
 #   Rule 1: Referral Protocol (permanent ban for violations)
@@ -66,6 +66,7 @@
     moderators_exempt: true
     action: remove
     action_reason: "Credit card number detected [{{match}}]"
+    comment: "Your {{kind}} was removed because it may contain payment card information. For your security, please never share card numbers publicly. If you have an account question, contact Amex directly at [americanexpress.com](https://www.americanexpress.com/us/customer-service/)."
     modmail_subject: "Doxxing Alert: Credit Card Number"
     modmail: |
         {{permalink}}
@@ -125,6 +126,7 @@
     moderators_exempt: true
     action: remove
     action_reason: "Possible SSN detected [{{match}}]"
+    comment: "Your {{kind}} was removed because it may contain a Social Security Number or similar sensitive identifier. Please never share personal identification numbers publicly. If you have identity-related concerns, contact Amex directly."
     modmail_subject: "Doxxing Alert: Possible SSN"
     modmail: |
         {{permalink}}
@@ -161,6 +163,7 @@
     moderators_exempt: true
     action: remove
     action_reason: "Email address detected [{{match}}]"
+    comment: "Your {{kind}} was removed because it may contain a personal email address. To protect your privacy, please avoid posting contact details publicly. Reach Amex through their official channels at [americanexpress.com](https://www.americanexpress.com/us/customer-service/)."
     modmail_subject: "Doxxing Alert: Email Address"
     modmail: |
         {{permalink}}
@@ -342,6 +345,7 @@
 
 ---
 # Remove referral links — any referral URL or referral-related domain
+# Exempt: the designated referral thread (title regex below)
     priority: 1
     body+title+url (regex):
         - '(?i)refer\.amex'
@@ -350,20 +354,24 @@
         - '(?i)(?:chase|citi|discover|capitalone|barclays|wellsfargo|usbank|bofa)\.com.{0,30}refer'
         - '(?i)referr?al\s*(?:link|code|url|bonus)\b'
         - '(?i)\breferr?al.*?credit.?card'
+    ~title (regex): '(?i)(?:monthly\s+)?referral\s+(?:thread|megathread|mega\s+thread)'
     moderators_exempt: true
     action: remove
     action_reason: "Rule 1: Referral activity outside designated thread [{{match}}]"
-    modmail_subject: "Rule 1 Violation: Referral Protocol"
+    comment: |
+        Your {{kind}} was removed because it appears to contain a referral link.
+
+        All referral activity belongs in the **designated pinned referral thread** -- please share your link there instead! That's the best way to reach members who are actively looking.
+
+        *If you think this was a mistake, [message the mods](https://www.reddit.com/message/compose?to=%2Fr%2F{{subreddit}}).*
+    modmail_subject: "Rule 1 Flag: Referral Link Detected"
     modmail: |
         {{permalink}}
 
-        The above {{kind}} by /u/{{author}} was removed for referral activity outside the designated thread.
-
-        **Rule 1 states this results in a permanent ban.** Please review and take action:
-        1. [Ban user](/r/{{subreddit}}/about/banned)
-        2. Send ban message citing Rule 1
+        /u/{{author}}'s {{kind}} was removed for referral activity outside the designated thread (Rule 1). Please review if escalation is needed.
 ---
 # Remove veiled referral solicitation
+# Exempt: the designated referral thread (title regex below)
     priority: 1
     body+title (regex):
         - '(?i)\b(?:DM|PM|message|msg)\s+(?:me|for)\s+(?:a\s+)?referr?al\b'
@@ -374,16 +382,16 @@
         - '(?i)\buse\s+(?:my|this)\s+(?:referr?al|link|code)\b'
         - '(?i)\b(?:happy|glad|willing)\s+to\s+(?:send|share|give)\s+(?:a\s+)?referr?al\b'
         - '(?i)\bif\s+(?:anyone|anybody|you)\s+(?:wants?|needs?)\s+(?:a\s+)?referr?al\b'
+    ~title (regex): '(?i)(?:monthly\s+)?referral\s+(?:thread|megathread|mega\s+thread)'
     moderators_exempt: true
     action: remove
     action_reason: "Rule 1: Veiled referral request [{{match}}]"
-    modmail_subject: "Rule 1 Violation: Veiled Referral"
+    comment: "Your {{kind}} was removed because it appears to solicit or offer a referral outside the designated thread. Per Rule 1, all referral activity must take place in the pinned referral thread. Please post there instead!"
+    modmail_subject: "Rule 1 Flag: Veiled Referral Detected"
     modmail: |
         {{permalink}}
 
-        The above {{kind}} by /u/{{author}} was removed for veiled referral solicitation.
-
-        **Rule 1 states this results in a permanent ban.** Please review and take action.
+        /u/{{author}}'s {{kind}} was removed for a veiled referral solicitation (Rule 1). Please review if escalation is needed.
 ---
 # Remove DM/PM solicitation (often referral-related, violates Rule 1)
     priority: 1
@@ -414,34 +422,91 @@
 ---
 
 # ============================================================================
+# SECTION 3a: DESIGNATED REFERRAL THREAD MANAGEMENT
+# Designated thread: https://www.reddit.com/r/amex/submit/?scheduled_post_id=437126
+# Identified by title regex. If the post title changes, update both rules
+# below AND the corresponding ~title exemptions in the Rule 1 rules above --
+# all four locations (2 Section 3a rules + 2 Rule 1 ~title exemptions) must stay in sync to function correctly.
+#
+# 30-day limit per user: AutoMod cannot track per-user comment history
+# (documented limitation -- see automod-reference.md). Enforcement mechanism:
+# sticky reminder + community reports (2 reports = filter + modmail to mods).
+# For automated 30-day enforcement, a Reddit Devvit app is required.
+# ============================================================================
+
+---
+# Sticky welcome + rules comment when the designated referral thread is posted
+type: submission
+title (regex): '(?i)(?:monthly\s+)?referral\s+(?:thread|megathread|mega\s+thread)'
+comment: |
+    Welcome to the r/amex Referral Thread!
+
+    **Please read before posting:**
+    - **One comment per cardmember.** Put all of your referral links in a single comment.
+    - **30-day limit.** You may post once every 30 days. If you have already commented in the last 30 days, please edit your existing comment rather than posting a new one.
+    - **Amex cards only.** This thread is for American Express card referrals only.
+    - **No DMs.** Do not ask others to message you -- keep all referral sharing public in this thread.
+    - **Update, don't duplicate.** If your links change, edit your existing comment instead of posting again.
+
+    Duplicate or off-topic comments will be removed by the moderators.
+
+    *This is an automated message from r/amex AutoModerator. Questions? [Message the mods.](https://www.reddit.com/message/compose?to=%2Fr%2F{{subreddit}})*
+comment_stickied: true
+---
+# 30-day enforcement: community-reported referral comments go to modqueue.
+# In this rule, title (regex) matches the PARENT SUBMISSION'S title (not the
+# comment itself) -- this is how AutoMod targets comments within a specific thread.
+# Community members: use the report button on any duplicate referral comment.
+type: comment
+title (regex): '(?i)(?:monthly\s+)?referral\s+(?:thread|megathread|mega\s+thread)'
+reports: 2
+action: filter
+action_reason: "Referral thread: reported comment -- verify 30-day rule for /u/{{author}}"
+modmail_subject: "Referral Thread: Reported Comment by /u/{{author}}"
+modmail: |
+    {{permalink}}
+
+    A comment by /u/{{author}} in the designated referral thread has been reported by the community.
+
+    **Please verify:**
+    1. Is this their first referral comment in the last 30 days? If yes, re-approve and ignore.
+    2. Is this a duplicate post within 30 days? If yes, remove the newer comment.
+    3. Is the content off-topic (non-Amex referrals, DM solicitation, etc.)? Remove and leave a note.
+
+# ============================================================================
 # SECTION 4: RULE 2 — ILLEGAL ACTIVITY & EXTERNAL LINK PROHIBITION
 # "Discussion or promotion of illegal activities is strictly prohibited and
 #  results in a permanent ban. This includes any and all links outside of
 #  the American Express domain."
+#
+# ALLOWLIST MAINTENANCE: The domain allowlist spans THREE separate regex rules
+# below (https://, www., and bare-domain). All three must be updated together
+# when adding or removing a domain. Search for "approved domain allowlist" to
+# find all three rules quickly.
 # ============================================================================
 
 ---
-# Remove ALL external links not on americanexpress.com or amex.com
-# Whitelisted: americanexpress.com, amex.com, reddit.com, redd.it
+# Remove ALL external links not on the approved domain allowlist
+# Whitelisted: amex, reddit, rewards/cashback, credit bureaus, news, co-brands, media
 # Boundary (?:[/\s?#]|$) prevents americanexpress.com.evil.com bypass
     priority: 1
-    title+body+url (regex): 'https?://(?!(?:[\w\-]+\.)*(?:americanexpress|amex)\.com(?:[/\s?#:]|$))(?!(?:[\w\-]+\.)*(?:reddit\.com|redd\.it)(?:[/\s?#:]|$))[\w\.\-]+\.\w+'
+    title+body+url (regex): 'https?://(?!(?:[\w\-]+\.)*(?:americanexpress\.com|amex\.com|reddit\.com|redd\.it|rakuten\.com|doctorofcredit\.com|myfico\.com|fico\.com|nerdwallet\.com|thepointsguy\.com|wallethub\.com|bankrate\.com|experian\.com|equifax\.com|transunion\.com|annualcreditreport\.com|imgur\.com|delta\.com|hilton\.com|marriott\.com)(?:[/\s?#:]|$))[\w\.\-]+\.\w+'
     moderators_exempt: true  # Mods can share helpful external resources
     action: remove
-    action_reason: "Rule 2: External link (non-Amex domain) [{{match}}]"
-    comment: "Your {{kind}} was removed because it contains a link outside the American Express domain. Per Rule 2, all external links are prohibited and result in a permanent ban. If you believe this was an error, [message the mods](https://www.reddit.com/message/compose?to=%2Fr%2F{{subreddit}})."
+    action_reason: "Rule 2: External link (non-approved domain) [{{match}}]"
+    comment: "Your {{kind}} was removed because it contains a link outside the approved domain list. Per Rule 2, only links to American Express and a small set of trusted reference sites are permitted. If you believe this site should be allowed, [message the mods](https://www.reddit.com/message/compose?to=%2Fr%2F{{subreddit}})."
 ---
 # Catch www. prefix URLs to non-whitelisted domains
     priority: 1
-    title+body (regex): '(?i)(?<![/\w])www\.(?!(?:[\w\-]+\.)*(?:americanexpress|amex)\.com(?:[/\s?#:]|$))(?!(?:[\w\-]+\.)*(?:reddit\.com|redd\.it)(?:[/\s?#:]|$))[\w\.\-]+\.\w+'
+    title+body (regex): '(?i)(?<![/\w])www\.(?!(?:[\w\-]+\.)*(?:americanexpress\.com|amex\.com|reddit\.com|redd\.it|rakuten\.com|doctorofcredit\.com|myfico\.com|fico\.com|nerdwallet\.com|thepointsguy\.com|wallethub\.com|bankrate\.com|experian\.com|equifax\.com|transunion\.com|annualcreditreport\.com|imgur\.com|delta\.com|hilton\.com|marriott\.com)(?:[/\s?#:,\.)]|$))[\w\.\-]+\.\w+'
     moderators_exempt: true
     action: remove
     action_reason: "Rule 2: External link via www prefix [{{match}}]"
-    comment: "Your {{kind}} was removed because it references a website outside the American Express domain. Per Rule 2, all external links are prohibited."
+    comment: "Your {{kind}} was removed because it references a website outside the approved domain list. Per Rule 2, only links to American Express and a small set of trusted reference sites are permitted."
 ---
 # Catch bare domain names (no http:// or www.)
     priority: 2
-    title+body (regex): '(?i)(?<![/\.\w@])(?!(?:americanexpress|amex)\.com)(?!reddit\.com|redd\.it)(?:[\w\-]+\.)+(?:com|net|org|io|co|me|info|xyz|ly|gl|be|gg|app|dev|us|uk|ca|au|de|fr|jp)\b(?:/[\w\.\-/]*)?'
+    title+body (regex): '(?i)(?<![/\.\w@])(?!(?:[\w\-]+\.)*(?:americanexpress\.com|amex\.com|reddit\.com|redd\.it|rakuten\.com|doctorofcredit\.com|myfico\.com|fico\.com|nerdwallet\.com|thepointsguy\.com|wallethub\.com|bankrate\.com|experian\.com|equifax\.com|transunion\.com|annualcreditreport\.com|imgur\.com|delta\.com|hilton\.com|marriott\.com)(?:[/\s?#:]|$))(?:[\w\-]+\.)+(?:com|net|org|io|co|me|info|xyz|ly|gl|be|gg|app|dev|us|uk|ca|au|de|fr|jp)\b(?:/[\w\.\-?#%&=]*)?'
     ~body (regex): ['(?i)\.(?:jpg|jpeg|png|gif|pdf|doc|xlsx?|csv|zip|mp[34]|html?|css|js|py|txt|md|yml|yaml|json|xml|exe)\b', '(?i)v?\d+\.\d+\.\d+', '(?i)(?:a\.m\.|p\.m\.|e\.g\.|i\.e\.|vs\.|etc\.|Dr\.|Mr\.|Mrs\.)']
     moderators_exempt: true
     action: filter
@@ -551,7 +616,7 @@ author:
     account_age: "< 30 days"
 action: remove
 action_reason: "New account: combined karma < 10, account age < 30 days"
-comment: "Your post was removed because your account does not yet meet our minimum karma and account age requirements. Please participate in other communities first. If you believe this was an error, contact the mods via modmail."
+comment: "Your post was removed because your account is too new or does not yet have enough karma for r/amex. You can still participate! Check the **Weekly Free Talk / Newbie thread** pinned at the top of the subreddit -- new accounts are always welcome there. Once you've built some karma in other communities, you'll be able to post normally here. Questions? [Message the mods.](https://www.reddit.com/message/compose?to=%2Fr%2F{{subreddit}})"
 ---
 type: comment
 author:
@@ -587,11 +652,7 @@ action_reason: "Inactive aged account (>1yr, <1 combined karma)"
     moderators_exempt: true
     action: remove
     action_reason: "Rule 5: Hate speech/slur detected [{{match}}]"
-    modmail_subject: "Rule 5 Violation: Hate Speech"
-    modmail: |
-        {{permalink}}
-
-        The above {{kind}} by /u/{{author}} was removed for a slur. **Rule 5 requires respectful conduct.** Consider a ban for repeat offenders.
+    # Modmail removed -- item drops silently into Modqueue to reduce mod alert fatigue
 ---
     priority: 1
     title+body (regex):
@@ -696,26 +757,35 @@ action_reason: "Rule 4: Possible moderator complaint [{{match}}]"
 
 ---
     reports: 3
-    action: remove
-    action_reason: "Auto-removed: 3+ reports"
-    modmail_subject: "Auto-removed: 3+ Reports"
+    action: filter
+    action_reason: "Filtered: 3+ community reports -- review before acting"
+    modmail_subject: "Community Flagged: 3+ Reports on /u/{{author}}"
     modmail: |
         {{permalink}}
 
-        The above {{kind}} by /u/{{author}} was automatically removed after receiving 3+ reports.
+        The above {{kind}} by /u/{{author}} was filtered after receiving 3+ community reports.
 
-        Please verify this action was correct. If the content is fine, re-approve it.
+        Please review before taking action -- do not auto-remove without verification.
 ---
 
 # ============================================================================
 # SECTION 10: COMMUNITY HELPER BOTS
 # AutoMod does not act on its own comments, so americanexpress.com links
 # in bot responses will not trigger Rule 2 enforcement.
+#
+# Users can summon any bot reply by typing a ! command in any post or comment.
+# Type !help to see the full list of available commands.
+#
+# Commands: !acronyms  !popup (!jail)   !recon      !lounge (!centurion)
+#           !retention  !offers          !transfer   !fr (!financialreview)
+#           !status     !contact (!support)          !rules  !trifecta  !help
+#           Insurance:  !return  !purchase  !warranty  !trip  !cellphone  !car
 # ============================================================================
 
 ---
-type: comment
-body (includes-word): ["acronym", "acronyms"]
+# !acronyms — common r/amex acronym definitions
+type: any
+body (regex): '(?i)!acronyms?'
 comment: |
     Common r/amex acronyms:
 
@@ -723,8 +793,9 @@ comment: |
 
     *This is an automated response. If triggered in error, please downvote.*
 ---
-type: submission
-body (regex): '(?:pop[\-\s]?up|popup)[\s\S]*?(?:jail|ineligib|not\s+eligible)|(?:jail|ineligib|not\s+eligible)[\s\S]*?(?:pop[\-\s]?up|popup)'
+# !popup / !jail — pop-up jail explanation and workaround
+type: any
+body (regex): '(?i)!pop[\-\s]?up|!jail|(?:pop[\-\s]?up|popup)[\s\S]*?(?:jail|ineligib|not\s+eligible)|(?:jail|ineligib|not\s+eligible)[\s\S]*?(?:pop[\-\s]?up|popup)'
 comment: |
     It looks like you may be asking about pop-up jail.
 
@@ -734,37 +805,48 @@ comment: |
 
     *This is an automated response. If triggered in error, please downvote.*
 ---
+# Passive trigger: "not eligible" without popup context (keeps existing behavior)
 type: submission
 body (regex): '\bnot\s+eligible\b'
 ~body (regex): '(?:pop[\-\s]?up|popup)'
 comment: "It looks like you may be experiencing an eligibility issue. This could be related to pop-up jail, the once-per-lifetime rule, or the 5/24 rule (Chase). Search r/amex for recent data points. This is an automated response. If triggered in error, please downvote."
 ---
-type: submission
-body (includes-word): "return protection"
-comment: "It looks like you may be asking about return protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/return-protection-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response."
+# !recon — Amex reconsideration line tips
+type: any
+body (regex): '(?i)!recon\b|\brec(?:onsideration)?\s+(?:line|call|number|department)\b|\breconsider\s+(?:my\s+)?(?:application|denial|decline)\b'
+comment: |
+    It looks like you may be asking about the Amex reconsideration line.
+
+    **To request reconsideration of a denied application:**
+    - Call **1-800-567-1083** and ask for the reconsideration department
+    - Have your application reference number ready
+    - Briefly explain why you applied and why you would be a great cardmember
+    - Be polite and calm -- the agent has discretion to overturn the decision
+    - If one agent declines, try calling back to reach a different agent
+
+    Recent reconsideration data points can be found by searching r/amex.
+
+    *This is an automated response. If triggered in error, please downvote.*
 ---
-type: submission
-body (regex): '\btrip\s+(?:delay|cancel|interrupt)'
-comment: "It looks like you may be asking about trip cancellation/delay insurance. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/trip-cancellation-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response."
+# !lounge / !centurion — airport lounge access by card
+type: any
+body (regex): '(?i)!(?:lounge|centurion)\b|\b(?:centurion|airport)\s+lounge\b|\bamex\s+lounge\s+access\b'
+comment: |
+    It looks like you may be asking about Amex lounge access.
+
+    **Lounge access by card:**
+    - **Platinum & Centurion:** Centurion Lounges + Delta Sky Clubs (when flying Delta) + Priority Pass Select (enrollment required) + Escape Lounges + Plaza Premium + Lufthansa
+    - **Hilton Aspire / Delta Reserve:** Priority Pass (Delta Reserve: Delta Sky Clubs when flying Delta only)
+    - **Green Card:** LoungeBuddy credits for pay-per-use access
+    - **Other cards:** Lounge access varies -- check your card's benefits guide
+
+    Enrollment may be required. Visit [americanexpress.com](https://www.americanexpress.com/us/credit-cards/features-benefits/access-lounges.html) to confirm your specific card's lounge perks.
+
+    *This is an automated response. If triggered in error, please downvote.*
 ---
-type: submission
-body (includes-word): "purchase protection"
-comment: "It looks like you may be asking about purchase protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/purchase-protection-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response."
----
-type: submission
-body (regex): '\bcell(?:\s+phone)?\s+protection\b'
-comment: "It looks like you may be asking about cell phone protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/cell-phone-protection.html) and ask pointed questions about any portions that are unclear. This is an automated response."
----
-type: submission
-body (regex): '\b(?:extended|ext)\s+warrant(?:y|ies)\b'
-comment: "It looks like you may be asking about extended warranty protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/extended-warranty-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response. If triggered in error, please downvote."
----
-type: submission
-body (regex): '\b(?:car|auto|vehicle)\s+(?:rental|rent)\s+(?:insurance|protection|coverage|CDW|LDW)\b|\b(?:CDW|LDW)\s+(?:coverage|protection|insurance)\b'
-comment: "It looks like you may be asking about car rental insurance. Amex offers Premium Car Rental Protection as an optional benefit on many cards. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/car-rental-loss-and-damage-insurance-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response. If triggered in error, please downvote."
----
-type: submission
-body (regex): '\b(?:annual\s+fee|AF)\s+(?:retention|retent|waiv|credit|offer)\b|\bretention\s+(?:offer|call|department)\b'
+# !retention — annual fee retention offer tips
+type: any
+body (regex): '(?i)!retention\b|\b(?:annual\s+fee|AF)\s+(?:retention|retent|waiv|credit|offer)\b|\bretention\s+(?:offer|call|department)\b'
 comment: |
     It looks like you may be asking about annual fee retention offers.
 
@@ -779,12 +861,21 @@ comment: |
 
     *This is an automated response. If triggered in error, please downvote.*
 ---
-type: submission
-body (regex): '\bamex\s+(?:offer|deal)s?\b|\badd(?:ed|ing)?\s+(?:all\s+)?offers?\b'
-comment: "It looks like you may be asking about Amex Offers. Offers are personalized and vary by cardmember. You can view and add offers in the Amex app under the \"Offers\" tab or at [americanexpress.com/offers](https://www.americanexpress.com/us/rewards/membership-rewards/offers/index.html). Remember: offers must be added to your card *before* the purchase. This is an automated response. If triggered in error, please downvote."
+# !offers — Amex Offers overview (explicit !offers command, works in posts and comments)
+type: any
+body (regex): '(?i)!offers?\b'
+comment: "It looks like you may be asking about Amex Offers. Offers are personalized and vary by cardmember. You can view and add offers in the Amex app under the \"Offers\" tab or at [americanexpress.com](https://www.americanexpress.com/us/rewards/membership-rewards/offers/index.html). Remember: offers must be added to your card *before* the purchase. This is an automated response. If triggered in error, please downvote."
 ---
+# !offers passive — fire on submissions only to avoid spamming comment threads
+# ("Amex offers" / "Amex deals" appear in many comments as statements, not questions)
 type: submission
-body (regex): '\btransfer\s+(?:partner|point|MR)s?\b|\b(?:MR|membership\s+rewards?)\s+(?:transfer|point)\b'
+body (regex): '(?i)\bamex\s+(?:offer|deal)s?\b|\badd(?:ed|ing)?\s+(?:all\s+)?offers?\b'
+~body (regex): '(?i)!offers?\b'
+comment: "It looks like you may be asking about Amex Offers. Offers are personalized and vary by cardmember. You can view and add offers in the Amex app under the \"Offers\" tab or at [americanexpress.com](https://www.americanexpress.com/us/rewards/membership-rewards/offers/index.html). Remember: offers must be added to your card *before* the purchase. This is an automated response. If triggered in error, please downvote."
+---
+# !transfer — Membership Rewards transfer partners
+type: any
+body (regex): '(?i)!transfer\b|\btransfer\s+(?:partner|point|MR)s?\b|\b(?:MR|membership\s+rewards?)\s+(?:transfer|point)\b'
 comment: |
     It looks like you may be asking about Membership Rewards transfer partners.
 
@@ -798,8 +889,31 @@ comment: |
 
     *This is an automated response. If triggered in error, please downvote.*
 ---
-type: submission
-body (regex): '\bfinancial\s+review\b|\b(?:amex|american\s*express)\b[\s\S]{0,200}?\bFR\b|\bFR\b[\s\S]{0,200}?\b(?:amex|american\s*express)\b|\bfinrev\b'
+# !fr / !financialreview — Financial Review guidance
+# Explicit summon: !fr or !financialreview (no exclusions so user commands always work).
+type: any
+body (regex): '(?i)!(?:fr|financialreview)\b'
+comment: |
+    It looks like you may be asking about an Amex Financial Review (FR).
+
+    A Financial Review is when Amex requests documentation to verify your income and spending. **Do not panic.** Key things to know:
+
+    1. Respond promptly -- provide the requested documents (tax returns, bank statements, etc.)
+    2. During the review, your cards may be restricted
+    3. The review typically takes 2-6 weeks
+    4. Being honest and cooperative is the best strategy
+    5. Do NOT close your cards during the review
+
+    Search r/amex for recent FR data points and experiences.
+
+    *This is an automated response. If triggered in error, please downvote.*
+---
+# Financial Review — passive detection (with exclusions for common FR false positives)
+# Passive triggers: "financial review" (spelled out) or "finrev" are unambiguous.
+# NOTE: \bFR\b proximity patterns were removed — "FR" also means "for real" in casual
+# Reddit speech, causing near-universal false positives on every r/amex comment.
+type: any
+body (regex): '(?i)\bfinancial\s+review\b|\bfinrev\b'
 ~body (regex): '\b(?:fire\s+department|first\s+responder|federal\s+register|francs?|france|friday)\b'
 comment: |
     It looks like you may be asking about an Amex Financial Review (FR).
@@ -815,4 +929,129 @@ comment: |
     Search r/amex for recent FR data points and experiences.
 
     *This is an automated response. If triggered in error, please downvote.*
+---
+# !status — Amex application status links and tips
+# Passive trigger requires "application" to avoid matching "app status" (mobile app)
+# or "when will I get/hear" which fires on unrelated questions constantly.
+type: any
+body (regex): '(?i)!status\b|\b(?:application|credit\s+card\s+app(?:lication)?)\s+(?:status|decision|pending)\b|\bamex\s+application\s+(?:status|decision)\b'
+comment: |
+    It looks like you may be checking on an Amex application.
+
+    **Ways to check your application status:**
+    - **Online:** [americanexpress.com](https://www.americanexpress.com/us/credit-cards/features-benefits/apply/check-status.html)
+    - **Phone:** **1-800-567-1083** (automated status line, 24/7)
+    - **Amex app:** Check under "Account" for any pending applications
+
+    A "7-10 business days" message typically means manual review. If you receive a denial, you have 30 days to request reconsideration -- type **!recon** for tips.
+
+    *This is an automated response. If triggered in error, please downvote.*
+---
+# !contact / !support — Amex contact numbers and options
+# Passive trigger requires intent ("how do I call/contact/reach") to avoid firing
+# on every complaint thread that mentions "Amex customer service is terrible."
+type: any
+body (regex): '(?i)!(?:contact|support)\b|\bhow\s+(?:do\s+I\s+)?(?:call|contact|reach)\s+(?:amex|american\s*express)\b'
+comment: |
+    It looks like you need to contact Amex directly.
+
+    **Amex contact options:**
+    - **General customer service:** Number on the back of your card
+    - **New applications / reconsideration:** 1-800-567-1083
+    - **International collect:** 1-336-393-1111
+    - **Chat:** Amex app or [americanexpress.com](https://www.americanexpress.com/us/customer-service/)
+    - **Secure message:** Through your online account (best for non-urgent issues)
+
+    For account-specific issues, the number on the back of your card routes directly to the right team.
+
+    *This is an automated response. If triggered in error, please downvote.*
+---
+# !rules — subreddit rules summary
+type: any
+body (regex): '(?i)!rules\b|\bwhat\s+are\s+the\s+(?:sub(?:reddit)?\s+)?rules\b'
+comment: |
+    **r/amex Subreddit Rules (summary):**
+
+    1. **Referral Protocol** -- All referral links must go in the designated pinned thread only. No DMs. One post per 30 days.
+    2. **Illegal Activity** -- No links outside the approved domain list, no scams, no fraud discussion, no impersonation.
+    3. **Submission Quality** -- Research before posting. Use the Monthly FAQ thread for common questions. Posts need flair and substance.
+    4. **Moderator Interaction** -- Mod decisions are final. Appeals go through modmail only.
+    5. **User Decorum** -- Be respectful. Use the block and report features for bad actors.
+
+    Full rules are in the sidebar. *This is an automated response. If triggered in error, please downvote.*
+---
+# !trifecta — Platinum + Gold + BBP strategy
+type: any
+body (regex): '(?i)!trifecta\b|\bamex\s+trifecta\b|\bplatinum\s*[+&\/]\s*gold\s*[+&\/]\s*(?:BBP|blue\s+business)\b'
+comment: |
+    It looks like you may be asking about the **Amex Trifecta** strategy.
+
+    The Amex Trifecta is a popular combination of three cards designed to maximize Membership Rewards (MR) earn rates across all spending:
+
+    - **Platinum Card** -- 5x on flights booked directly or through Amex Travel; premium travel benefits including Centurion Lounge access
+    - **Gold Card** -- 4x at restaurants worldwide and at U.S. supermarkets (up to $25k/year); 3x on flights
+    - **Blue Business Plus (BBP)** -- 2x on all purchases up to $50k/year (no annual fee); excellent everyday catch-all
+
+    Together, the three cards provide a 2x floor on everything with 3-5x multipliers where it matters most.
+
+    *This is an automated response. If triggered in error, please downvote.*
+---
+# !help — list all available bot commands
+type: any
+body (regex): '(?i)!help\b'
+comment: |
+    **r/amex AutoMod commands** -- type any of these in a comment or post to get a helpful reply:
+
+    | Command | Topic |
+    |---------|-------|
+    | !acronyms | Common r/amex acronym definitions |
+    | !popup or !jail | Pop-up jail explanation and workaround |
+    | !recon | Amex reconsideration line tips |
+    | !lounge or !centurion | Airport lounge access by card |
+    | !retention | Annual fee retention offer tips |
+    | !offers | Amex Offers overview |
+    | !transfer | Membership Rewards transfer partners |
+    | !fr or !financialreview | Financial Review (FR) guidance |
+    | !status | Application status links and tips |
+    | !contact or !support | Amex contact numbers and options |
+    | !rules | Subreddit rules summary |
+    | !trifecta | Platinum + Gold + BBP strategy |
+    | !return | Return protection policy |
+    | !purchase | Purchase protection policy |
+    | !warranty | Extended warranty protection |
+    | !trip | Trip cancellation/delay insurance |
+    | !cellphone | Cell phone protection |
+    | !car | Car rental insurance |
+
+    *This is an automated response. If triggered in error, please downvote.*
+---
+# !return — return protection policy
+type: any
+body (regex): '(?i)!return\b|\breturn\s+protection\b'
+comment: "It looks like you may be asking about return protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/return-protection-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response. If triggered in error, please downvote."
+---
+# !purchase — purchase protection policy
+type: any
+body (regex): '(?i)!purchase\b|\bpurchase\s+protection\b'
+comment: "It looks like you may be asking about purchase protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/purchase-protection-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response. If triggered in error, please downvote."
+---
+# !warranty — extended warranty protection
+type: any
+body (regex): '(?i)!warranty\b|\b(?:extended|ext)\s+warrant(?:y|ies)\b'
+comment: "It looks like you may be asking about extended warranty protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/extended-warranty-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response. If triggered in error, please downvote."
+---
+# !trip — trip cancellation/delay insurance
+type: any
+body (regex): '(?i)!trip\b|\btrip\s+(?:delay|cancel|interrupt)\b'
+comment: "It looks like you may be asking about trip cancellation/delay insurance. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/trip-cancellation-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response. If triggered in error, please downvote."
+---
+# !cellphone — cell phone protection
+type: any
+body (regex): '(?i)!cellphone\b|\bcell(?:\s+phone)?\s+protection\b'
+comment: "It looks like you may be asking about cell phone protection. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/cell-phone-protection.html) and ask pointed questions about any portions that are unclear. This is an automated response. If triggered in error, please downvote."
+---
+# !car — car rental insurance
+type: any
+body (regex): '(?i)!car\b|\b(?:car|auto|vehicle)\s+(?:rental|rent)\s+(?:insurance|protection|coverage|CDW|LDW)\b|\b(?:CDW|LDW)\s+(?:coverage|protection|insurance)\b'
+comment: "It looks like you may be asking about car rental insurance. Amex offers Premium Car Rental Protection as an optional benefit on many cards. Please review the [terms of your policy](https://www.americanexpress.com/us/credit-cards/features-benefits/policies/car-rental-loss-and-damage-insurance-terms.html) and ask pointed questions about any portions that are unclear. This is an automated response. If triggered in error, please downvote."
 ---
