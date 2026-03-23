@@ -4,16 +4,16 @@ This repository contains a production AutoModerator configuration for **r/amex**
 
 Primary config file:
 
-- `/home/runner/work/gemini-agentic/gemini-agentic/amex_automod_remediated.yml`
+- `./amex_automod_remediated.yml`
 
 Reference/source docs (snapshots):
 
-- `/home/runner/work/gemini-agentic/gemini-agentic/Reddit 1.yml`
-- `/home/runner/work/gemini-agentic/gemini-agentic/Reddit 2.txt`
-- `/home/runner/work/gemini-agentic/gemini-agentic/Reddit 3.txt`
-- `/home/runner/work/gemini-agentic/gemini-agentic/Reddit 4.txt`
-- `/home/runner/work/gemini-agentic/gemini-agentic/Reddit 5.txt`
-- `/home/runner/work/gemini-agentic/gemini-agentic/Reddit 6.txt`
+- `./Reddit 1.yml`
+- `./Reddit 2.txt`
+- `./Reddit 3.txt`
+- `./Reddit 4.txt`
+- `./Reddit 5.txt`
+- `./Reddit 6.txt`
 
 ---
 
@@ -166,7 +166,7 @@ For staged rollout, deploy during active moderator coverage windows.
 Because this repository has no app/test framework, validate with Python checks:
 
 ```bash
-cd /home/runner/work/gemini-agentic/gemini-agentic
+cd /path/to/gemini-agentic
 python - <<'PY'
 import yaml, re
 from pathlib import Path
