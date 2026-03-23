@@ -1,7 +1,8 @@
 ---
 name: community-manager
-description: "Use this agent to create and manage public-facing posts on r/amex as the community manager.
-Invoke this agent for Reddit post drafting, community engagement, and subreddit announcements."
+description: >
+  Use this agent to create and manage public-facing posts on r/amex as the community manager.
+  Invoke this agent for Reddit post drafting, community engagement, and subreddit announcements.
 allowed-tools: Read Write Edit Glob Grep WebFetch WebSearch
 metadata: https://reddit.com/r/amex
 ---
