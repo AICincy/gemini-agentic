@@ -2,7 +2,7 @@
 
 Production-ready [AutoModerator](https://www.reddit.com/wiki/automoderator/full-documentation) ruleset for the **r/amex** subreddit — covering PII protection, policy enforcement, spam control, and community automation.
 
-> **Version 4.1** · 818 lines · 53 active rules across 10 sections · MIT License
+> **Version 5.0** · 62 active rules across 11 sections · Referral thread management · 19 user `!` commands · Expanded domain allowlist · CI validation · MIT License
 
 ---
 
@@ -54,6 +54,7 @@ Beyond rule enforcement, the config provides **PII/doxxing protection** (credit 
 | File | Purpose |
 |------|---------|
 | `amex_automod_remediated.yml` | **Production AutoMod config** — deploy this file |
+| `.github/workflows/validate.yml` | **CI validation** — auto-tests config on every push/PR |
 | `automod-reference.md` | Consolidated AutoModerator documentation reference |
 | `community-manager.md` | Community manager skill for r/amex post creation |
 
@@ -70,13 +71,14 @@ The config is organized into **10 sections**, each separated by `---` document d
 | 1 | **Shadowbans** | Username-targeted silent removal |
 | 2 | **PII / Doxxing Protection** | Sensitive data detection and removal |
 | 3 | **Rule 1 — Referral Protocol** | Referral posting enforcement |
+| 3a | **Designated Referral Thread** | Sticky rules + 30-day limit enforcement via community reports |
 | 4 | **Rule 2 — Illegal Activity & Links** | External link and scam blocking |
 | 5 | **Account Quality Gates** | Account age/karma filtering |
 | 6 | **Rule 5 — User Decorum** | Abusive language and threat detection |
 | 7 | **Rule 3 — Submission Quality** | Low-effort post filtering |
 | 8 | **Rule 4 — Moderator Interaction** | Mod authority enforcement |
 | 9 | **Report Handling** | Report-triggered moderation workflows |
-| 10 | **Community Helpers** | Auto-replies for common topics |
+| 10 | **Community Helpers & Bot Commands** | Auto-replies for common topics; user-summoned `!` commands |
 
 ### Execution Model
 
@@ -130,14 +132,63 @@ The most comprehensive section, providing layered defense against sensitive data
 - **Submission Quality (Rule 3):** Detects low-effort and FAQ-pattern posts. Directs users to research resources.
 - **Report Handling:** Routes user-reported content to moderators for review.
 
-### Community Helpers
+### Community Helpers & Bot Commands
 
-Non-enforcement automations that auto-reply with standardized guidance:
-- Credit card acronym explanations
-- Pop-up jail information
-- Retention offer guidance
-- Transfer partner details
-- Financial review process information
+Non-enforcement automations that auto-reply with standardized guidance. All commands work on both **posts and comments** using `type: any`.
+
+#### User-Summoned `!` Commands
+
+Any member or moderator can type a `!` command in any post or comment to summon an AutoMod reply:
+
+| Command | Aliases | Topic |
+|---------|---------|-------|
+| `!acronyms` | | Common r/amex acronym definitions |
+| `!popup` | `!jail` | Pop-up jail explanation and workaround |
+| `!recon` | | Amex reconsideration line tips |
+| `!lounge` | `!centurion` | Airport lounge access by card |
+| `!retention` | | Annual fee retention offer tips |
+| `!offers` | | Amex Offers overview |
+| `!transfer` | | Membership Rewards transfer partners |
+| `!fr` | `!financialreview` | Financial Review (FR) guidance |
+| `!status` | | Application status links and tips |
+| `!contact` | `!support` | Amex contact numbers and options |
+| `!rules` | | Subreddit rules summary |
+| `!trifecta` | | Platinum + Gold + BBP strategy |
+| `!return` | | Return protection policy link |
+| `!purchase` | | Purchase protection policy link |
+| `!warranty` | | Extended warranty protection link |
+| `!trip` | | Trip cancellation/delay insurance link |
+| `!cellphone` | | Cell phone protection link |
+| `!car` | | Car rental insurance link |
+| `!help` | | List all available commands |
+
+Commands also trigger organically when users discuss the topic naturally (e.g., mentioning "pop-up jail" triggers the same reply as `!popup`).
+
+#### Designated Referral Thread (Section 3a)
+
+The only permitted location for referral links is the designated scheduled thread:
+`https://www.reddit.com/r/amex/submit/?scheduled_post_id=437126`
+
+AutoMod enforces this thread with:
+- **Sticky welcome comment** with rules when the thread is posted
+- **Community-report pipeline**: 1 report → filter + modmail to mods for 30-day compliance review
+- **Exemption**: the referral link and veiled solicitation rules are silenced inside this thread
+
+> **Note:** The 30-day per-user limit cannot be enforced natively by AutoMod (per its documented limitations). Community reports + mod review are the enforcement mechanism. For automated enforcement, a Reddit [Devvit](https://developers.reddit.com/docs/devvit) app is recommended.
+
+#### Approved External Domain Allowlist (Rule 2)
+
+Rule 2 blocks all external links except the following trusted domains:
+
+| Category | Domains |
+|----------|---------|
+| American Express | `americanexpress.com`, `amex.com` |
+| Reddit | `reddit.com`, `redd.it` |
+| Rewards / Cashback | `rakuten.com` |
+| Credit News | `doctorofcredit.com`, `nerdwallet.com`, `thepointsguy.com`, `wallethub.com`, `bankrate.com` |
+| Credit Scores | `myfico.com`, `fico.com`, `experian.com`, `equifax.com`, `transunion.com`, `annualcreditreport.com` |
+| Media / Images | `imgur.com` |
+| Co-Brand Partners | `delta.com`, `hilton.com`, `marriott.com` |
 
 ---
 
@@ -150,6 +201,8 @@ Non-enforcement automations that auto-reply with standardized guidance:
 | **False-positive control** | Exclusion clauses (`~body (regex)` and contextual guards) on broader detectors |
 | **Auditability** | `action_reason` with `{{match}}` preserves traceability for every moderator action |
 | **Policy traceability** | Rules map directly to subreddit rule numbers via section header comments |
+| **Educational tone** | Removal comments guide users to the correct channel rather than threatening bans |
+| **Community empowerment** | `!` commands let veteran members summon AutoMod help for new users |
 
 ---
 
@@ -213,6 +266,8 @@ for i, d in enumerate(docs, 1):
 print(f"Regex validation: {'PASS' if errors == 0 else f'FAIL ({errors} errors)'}")
 PY
 ```
+
+This same script runs automatically via **GitHub Actions** (`.github/workflows/validate.yml`) on every push or pull request that touches `amex_automod_remediated.yml`.
 
 ---
 
