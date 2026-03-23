@@ -35,7 +35,7 @@
 
 # ============================================================================
 # SECTION 2: PII / DOXXING PROTECTION
-# Applies to mods too. PII leaks are PII leaks regardless of who posts.
+# Moderators are exempt from these rules.
 # ============================================================================
 
 ---
@@ -63,7 +63,7 @@
         # JCB classic (2131, 1800) — 15-digit, 4-6-5
         - '(?<!\d)(?:2131|1800)[^\da-zA-Z]{0,6}\d{6}[^\da-zA-Z]{0,6}\d{5}(?!\d)'
     ignore_blockquotes: true
-    moderators_exempt: false
+    moderators_exempt: true
     action: remove
     action_reason: "Credit card number detected [{{match}}]"
     modmail_subject: "Doxxing Alert: Credit Card Number"
@@ -80,14 +80,15 @@
 # CC per-digit separation defense: catches "4 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5"
 # Primary grouped patterns require contiguous digits within each group, so
 # per-digit obfuscation bypasses them. This catches 13-19 digits where each
-# digit may be separated by a single common separator character.
+# digit may be separated by common separator characters (spaces, dots, dashes, etc.)
 # Limited to card-valid first digits [1-6] (includes JCB 1xxx, MC 2xxx, Visa 4xxx, etc.)
+# Allows up to 2 separator characters between digits to catch multi-char padding
     priority: 1
-    title+body (regex): '(?<!\d)[1-6][\s\.\-_/]?\d(?:[\s\.\-_/]?\d){11,17}(?!\d)'
+    title+body (regex): '(?<!\d)[1-6](?:[\s\.\-_/]{0,2}\d){12,18}(?!\d)'
     # Exclude contiguous runs (already caught by secondary rule) — only want truly separated
     ~body (regex): '\d{13,19}'
     ignore_blockquotes: true
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Per-digit separated card number pattern [{{match}}]"
     modmail_subject: "PII Alert: Separated Card Digits"
@@ -105,7 +106,7 @@
     # Exclude contexts where long digit strings are expected
     ~body (regex): ['(?i)(?:tracking|order|confirmation|reference|invoice|receipt|account|transaction|auth(?:orization)?)\s*[#:_\-]?\s*\d{13,19}', '(?i)(?:sku|upc|ean|isbn|asin|imei|meid|iccid)\s*[#:_\-]?\s*\d{13,19}']
     ignore_blockquotes: true
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Contiguous digit run — possible unformatted card number [{{match}}]"
     modmail_subject: "PII Alert: Possible Card Number"
@@ -121,7 +122,7 @@
     priority: 1
     title+body (regex): '(?<!\d)(?!000|666|9\d{2})\d{3}[^\da-zA-Z]{0,4}(?!00)\d{2}[^\da-zA-Z]{0,4}(?!0000)\d{4}(?!\d)'
     ignore_blockquotes: true
-    moderators_exempt: false
+    moderators_exempt: true
     action: remove
     action_reason: "Possible SSN detected [{{match}}]"
     modmail_subject: "Doxxing Alert: Possible SSN"
@@ -141,7 +142,7 @@
     # Exclusion separators use \W+ to match any separator style
     ~body (regex): ['000\W+000\W+0000', '111\W+111\W+1111', '222\W+222\W+2222', '999\W+999\W+9999', '\d{3}\W+555\W+\d{4}', '\d*1\W?2\W?3\W?4\W?5\W?6\W?7\W?8\W?9\d*', '800\W+273\W+8255', '800\W+799\W+7233', '988', '(https?://|www\.)\S*([\(\)\._\-]{0,3}\d){5}\w*']
     ignore_blockquotes: true
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Possible phone number detected [{{match}}]"
     modmail_subject: "PII Alert: Phone Number"
@@ -157,7 +158,7 @@
     priority: 1
     title+body (regex): '(?<![\.\w\-])(?!(?:abuse|help|info|no-?reply|phishing|service|spoof|support)\s*@)[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
     ignore_blockquotes: true
-    moderators_exempt: false
+    moderators_exempt: true
     action: remove
     action_reason: "Email address detected [{{match}}]"
     modmail_subject: "Doxxing Alert: Email Address"
@@ -178,7 +179,7 @@
     priority: 1
     title+body (regex): '(?i)[\w\.\+\-]+\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>]\s*[\w\-]+\s*[\[\(\{<]\s*(?:dot|\.)\s*[\]\)\}>]\s*[\w\.\-]+'
     ignore_blockquotes: true
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Obfuscated email detected [{{match}}]"
     modmail_subject: "PII Alert: Obfuscated Email"
@@ -195,7 +196,7 @@
     priority: 2
     title+body (regex): '[\w\.\+\-]+\s+AT\s+[\w\-]+\s+DOT\s+[\w\.\-]+'
     ignore_blockquotes: true
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Obfuscated email (bare AT/DOT) [{{match}}]"
 ---
@@ -204,7 +205,7 @@
     priority: 1
     title+body (regex): '(?<!\d)\d{1,5}\s+[A-Za-z][\w\s]{0,29}(?:st(?:reet)?|ave(?:nue)?|blvd|boulevard|dr(?:ive)?|ln|lane|rd|road|ct|court|pl(?:ace)?|way|cir(?:cle)?|pkwy|parkway)\b[\s,]+[\w\s]+,?\s*\b[A-Z]{2}\b\s+\d{5}(?:\-\d{4})?(?!\d)'
     ignore_blockquotes: true
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Possible mailing address detected [{{match}}]"
     modmail_subject: "PII Alert: Mailing Address"
@@ -222,23 +223,34 @@
     priority: 1
     is_edited: true
     title+body (regex):
-        # CC grouped (any non-alnum separator)
+        # CC grouped — Visa + Mastercard (16-digit)
         - '(?<!\d)(?:4\d{3}|5[1-5]\d{2}|2(?:22[1-9]|2[3-9]\d|[3-6]\d{2}|7[01]\d|720))[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}(?!\d)'
+        # CC grouped — Amex (15-digit)
         - '(?<!\d)3[47]\d{2}[^\da-zA-Z]{0,6}\d{6}[^\da-zA-Z]{0,6}\d{5}(?!\d)'
+        # CC grouped — Discover (16-digit)
+        - '(?<!\d)(?:6011|64[4-9]\d|65\d{2})[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}(?!\d)'
+        # CC grouped — Diners Club (14-digit)
+        - '(?<!\d)3(?:0[0-5]|[68]\d)\d[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{2}(?!\d)'
+        # CC grouped — JCB modern (16-digit)
+        - '(?<!\d)35\d{2}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}(?!\d)'
+        # CC grouped — JCB classic (15-digit)
+        - '(?<!\d)(?:2131|1800)[^\da-zA-Z]{0,6}\d{6}[^\da-zA-Z]{0,6}\d{5}(?!\d)'
         # CC per-digit
-        - '(?<!\d)[1-6][\s\.\-_/]?\d(?:[\s\.\-_/]?\d){11,17}(?!\d)'
+        - '(?<!\d)[1-6](?:[\s\.\-_/]{0,2}\d){12,18}(?!\d)'
         # CC contiguous
         - '(?<!\d)\d{13,19}(?!\d)'
         # SSN
         - '(?<!\d)(?!000|666|9\d{2})\d{3}[^\da-zA-Z]{0,4}(?!00)\d{2}[^\da-zA-Z]{0,4}(?!0000)\d{4}(?!\d)'
+        # Phone
+        - '(?<!\d)(?:\+?1[^\da-zA-Z]{0,4})?\(?\d{3}\)?[^\da-zA-Z]{0,4}\d{3}[^\da-zA-Z]{0,4}\d{4}(?!\d)'
         # Email (with spaces around @)
-        - '(?<![\.\w\-])(?!(?:abuse|help|info|no[\s\.\-_]?reply|support)\s*@)[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
-        # Obfuscated email
-        - '(?i)(?!(?:abuse|help|info|no[\s\.\-_]?reply|support)\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>])[\w\.\+\-]+\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>]\s*[\w\-]+\s*[\[\(\{<]\s*(?:dot|\.)\s*[\]\)\}>]\s*[\w\.\-]+'
-        # Obfuscated email (bare "at"/"dot" without brackets)
-        - '(?i)(?<![\.\w\-])(?!(?:abuse|help|info|no[\s\.\-_]?reply|support)\s+(?:at|@)\s+)[\w\.\+\-]+\s+(?:at|@)\s+[\w\-]+(?:\s+(?:dot|\.)\s+[\w\.\-]+)+\b'
+        - '(?<![\.\w\-])(?!(?:abuse|help|info|no-?reply|phishing|service|spoof|support)\s*@)[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
+        # Obfuscated email — bracketed
+        - '(?i)(?!(?:abuse|help|info|no[\s\.\-_]?reply|phishing|service|spoof|support)\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>])[\w\.\+\-]+\s*[\[\(\{<]\s*(?:at|@)\s*[\]\)\}>]\s*[\w\-]+\s*[\[\(\{<]\s*(?:dot|\.)\s*[\]\)\}>]\s*[\w\.\-]+'
+        # Obfuscated email — ALL CAPS bare keywords
+        - '[\w\.\+\-]+\s+AT\s+[\w\-]+\s+DOT\s+[\w\.\-]+'
     ignore_blockquotes: true
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Edited content contains possible PII [{{match}}]"
     modmail_subject: "PII Alert: Edited Content"
@@ -258,7 +270,7 @@
     priority: 1
     title+body (regex):
         - "[\u200B\u200C\u200D\u200E\u200F\u2060\uFEFF]"
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Zero-width Unicode character detected — possible pattern evasion [{{match}}]"
     modmail_subject: "PII Alert: Zero-Width Character Evasion"
@@ -280,7 +292,7 @@
         - "[\u2070\u00B9\u00B2\u00B3\u2074-\u2079]{3,}"
         - "[\u2080-\u2089]{3,}"
         - "[\u2460-\u2473]{3,}"
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Unicode digit substitution detected [{{match}}]"
     modmail_subject: "PII Alert: Unicode Digit Evasion"
@@ -295,14 +307,27 @@
 # Primary PII rules use ignore_blockquotes:true for fewer false positives,
 # but this creates a bypass — PII in > quotes is invisible to them.
 # This rule checks everything (ignore_blockquotes:false) with filter action.
-# Separators synced with primary rules.
+# Uses full patterns from primary rules for accuracy.
     priority: 2
     title+body (regex):
-        - '(?<!\d)(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6011|65\d{2})[^\da-zA-Z]{0,6}\d{4,6}[^\da-zA-Z]{0,6}\d{4,5}(?!\d)'
+        # CC — Visa + Mastercard (16-digit)
+        - '(?<!\d)(?:4\d{3}|5[1-5]\d{2}|2(?:22[1-9]|2[3-9]\d|[3-6]\d{2}|7[01]\d|720))[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}(?!\d)'
+        # CC — Amex (15-digit)
+        - '(?<!\d)3[47]\d{2}[^\da-zA-Z]{0,6}\d{6}[^\da-zA-Z]{0,6}\d{5}(?!\d)'
+        # CC — Discover (16-digit)
+        - '(?<!\d)(?:6011|64[4-9]\d|65\d{2})[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}(?!\d)'
+        # CC — Diners Club (14-digit)
+        - '(?<!\d)3(?:0[0-5]|[68]\d)\d[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{2}(?!\d)'
+        # CC — JCB modern (16-digit)
+        - '(?<!\d)35\d{2}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}[^\da-zA-Z]{0,6}\d{4}(?!\d)'
+        # CC — JCB classic (15-digit)
+        - '(?<!\d)(?:2131|1800)[^\da-zA-Z]{0,6}\d{6}[^\da-zA-Z]{0,6}\d{5}(?!\d)'
+        # SSN
         - '(?<!\d)(?!000|666|9\d{2})\d{3}[^\da-zA-Z]{0,4}(?!00)\d{2}[^\da-zA-Z]{0,4}(?!0000)\d{4}(?!\d)'
+        # Email
         - '(?<![\.\w\-])[\w\.\+\-]+\s*@\s*[\w\-]+\.[\w\.\-]+\b'
     ignore_blockquotes: false
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Possible PII in blockquoted content [{{match}}]"
 ---
@@ -325,7 +350,7 @@
         - '(?i)(?:chase|citi|discover|capitalone|barclays|wellsfargo|usbank|bofa)\.com.{0,30}refer'
         - '(?i)referr?al\s*(?:link|code|url|bonus)\b'
         - '(?i)\breferr?al.*?credit.?card'
-    moderators_exempt: false
+    moderators_exempt: true
     action: remove
     action_reason: "Rule 1: Referral activity outside designated thread [{{match}}]"
     modmail_subject: "Rule 1 Violation: Referral Protocol"
@@ -349,7 +374,7 @@
         - '(?i)\buse\s+(?:my|this)\s+(?:referr?al|link|code)\b'
         - '(?i)\b(?:happy|glad|willing)\s+to\s+(?:send|share|give)\s+(?:a\s+)?referr?al\b'
         - '(?i)\bif\s+(?:anyone|anybody|you)\s+(?:wants?|needs?)\s+(?:a\s+)?referr?al\b'
-    moderators_exempt: false
+    moderators_exempt: true
     action: remove
     action_reason: "Rule 1: Veiled referral request [{{match}}]"
     modmail_subject: "Rule 1 Violation: Veiled Referral"
@@ -400,7 +425,7 @@
 # Boundary (?:[/\s?#]|$) prevents americanexpress.com.evil.com bypass
     priority: 1
     title+body+url (regex): 'https?://(?!(?:[\w\-]+\.)*(?:americanexpress|amex)\.com(?:[/\s?#:]|$))(?!(?:[\w\-]+\.)*(?:reddit\.com|redd\.it)(?:[/\s?#:]|$))[\w\.\-]+\.\w+'
-    moderators_exempt: true
+    moderators_exempt: true  # Mods can share helpful external resources
     action: remove
     action_reason: "Rule 2: External link (non-Amex domain) [{{match}}]"
     comment: "Your {{kind}} was removed because it contains a link outside the American Express domain. Per Rule 2, all external links are prohibited and result in a permanent ban. If you believe this was an error, [message the mods](https://www.reddit.com/message/compose?to=%2Fr%2F{{subreddit}})."
@@ -432,7 +457,7 @@
         - '(?i)(?:amex|american[\-_]?express|credit[\-_]?card)[\w\-]*\.(?:xyz|tk|ml|ga|cf|top|click|buzz|icu|gq|work|date|racing|stream|bid|loan|win|party|link|rest|site|space|fun|monster|bar|cfd|sbs|quest)'
         - '(?i)amex\d+\.(?:com|net|org)'
         - '(?i)\[[^\]]*(?:amex|american\s*express)[^\]]*\]\((?:https?://)?(?!(?:[\w\-]+\.)?(?:americanexpress|amex)\.com(?:[/\s?#:]|$))[\w\.\-]+\.\w+(?:[/\w\.\-?#%&=]*)?\)'
-    moderators_exempt: false
+    moderators_exempt: true
     action: remove
     action_reason: "Rule 2: Phishing domain detected [{{match}}]"
     modmail_subject: "Phishing Alert"
@@ -454,7 +479,7 @@
         - '(?i)\b(?:application|app)\s+fraud\b'
         - '(?i)\b(?:fraudulent|fake)\s+(?:charge|transaction|claim|application|identity|ID|SSN|documents?)\b'
         - '(?i)\bhow\s+to\s+(?:commit|do|get\s+away\s+with)\s+(?:fraud|theft)\b'
-    moderators_exempt: false
+    moderators_exempt: true
     action: remove
     action_reason: "Rule 2: Illegal activity discussion [{{match}}]"
     modmail_subject: "Rule 2 Violation: Illegal Activity"
@@ -472,7 +497,7 @@
         - '(?i)\bamex\s+(?:employee|representative|agent|insider)\b'
         - '(?i)\b(?:inside|insider)\s+(?:info|information|knowledge|tip)\s+(?:from|about|on)\s+amex\b'
         - '(?i)\b(?:source|contact|friend|buddy)\s+(?:at|inside|within)\s+(?:amex|american\s*express)\b'
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Rule 2: Possible Amex impersonation [{{match}}]"
     modmail_subject: "Impersonation Alert"
@@ -534,10 +559,12 @@ author:
 action: filter
 action_reason: "New account comment: karma < 5, age < 7 days"
 ---
-    author:
-        combined_karma: "< -25"
-    action: remove
-    action_reason: "Troll account (combined karma < -25)"
+---
+type: any
+author:
+    combined_karma: "< -25"
+action: remove
+action_reason: "Troll account (combined karma < -25)"
 ---
 type: comment
 author:
@@ -556,7 +583,7 @@ action_reason: "Inactive aged account (>1yr, <1 combined karma)"
     priority: 1
     title+body (regex):
         - '(?i)\b(?:retard(?:ed)?|f[a@]g(?:got)?|tr[a@]nn(?:y|ie)|d[yi]ke|k[i1]ke|sp[i1]c|ch[i1]nk|w[e3]tb[a@]ck|c[o0][o0]n)\b'
-    moderators_exempt: false
+    moderators_exempt: true
     action: remove
     action_reason: "Rule 5: Hate speech/slur detected [{{match}}]"
     modmail_subject: "Rule 5 Violation: Hate Speech"
@@ -573,7 +600,7 @@ action_reason: "Inactive aged account (>1yr, <1 combined karma)"
         - '(?i)\bhope\s+you\s+(?:die|get\s+(?:cancer|hit|fired|banned))\b'
         - '(?i)\bnobody\s+(?:likes|cares\s+about|asked)\s+you\b'
         - '(?i)\bshut\s+(?:the\s+fuck\s+)?up\b'
-    moderators_exempt: false
+    moderators_exempt: true
     action: filter
     action_reason: "Rule 5: Personal attack/insult [{{match}}]"
     comment: "Your comment was filtered for review because it may violate Rule 5 (User Decorum). Please maintain respectful conduct. If another user is bothering you, use the **block** and **report** features rather than engaging."
@@ -583,7 +610,7 @@ action_reason: "Inactive aged account (>1yr, <1 combined karma)"
         - "(?i)\\bI\\s*(?:will|am\\s+going\\s+to|gonna)\\s+(?:find|hunt|track|dox|hack|hurt|kill|sue)\\s+you\\b"
         - '(?i)\bwatch\s+your\s+back\b'
         - '(?i)\byou(?:r|\s+will)\s+(?:regret|pay\s+for)\s+this\b'
-    moderators_exempt: false
+    moderators_exempt: true
     action: remove
     action_reason: "Rule 5: Threat detected [{{match}}]"
     modmail_subject: "Rule 5 Violation: Threat"
