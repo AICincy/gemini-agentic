@@ -27,7 +27,7 @@ All posts must comply with the five r/amex subreddit rules:
 
 ## Repository Context
 
-Ground all content decisions in these repository files:
+Ground all content decisions in the Amex-Automod-Wiki repository files:
 
 | File | Use |
 |------|-----|
