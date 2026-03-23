@@ -2,7 +2,7 @@
 
 Production-ready [AutoModerator](https://www.reddit.com/wiki/automoderator/full-documentation) ruleset for the **r/amex** subreddit — covering PII protection, policy enforcement, spam control, and community automation.
 
-> **Version 4.1** · 816 lines · 53 active rules across 10 sections · MIT License
+> **Version 4.1** · 818 lines · 53 active rules across 10 sections · MIT License
 
 ---
 
