@@ -267,7 +267,7 @@ print(f"Regex validation: {'PASS' if errors == 0 else f'FAIL ({errors} errors)'}
 PY
 ```
 
-This same script runs automatically via **GitHub Actions** (`.github/workflows/validate.yml`) on every push or pull request that touches `amex_automod_remediated.yml`.
+A CI job in **GitHub Actions** (`.github/workflows/validate.yml`) runs an extended version of this validation on every push or pull request that touches `amex_automod_remediated.yml`.
 
 ---
 
